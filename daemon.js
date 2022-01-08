@@ -35,12 +35,12 @@ const lowUtilizationThreshold = 0.80; // The counterpart - low utilization, whic
 const maxUtilizationPreppingAboveHackLevel = 0.75;
 // Maximum number of milliseconds the main targeting loop should run before we take a break until the next loop
 const maxLoopTime = 1000; //ms
-let loopInterval = 1000; //ms
+let loopInterval = 500; //ms
 // the number of milliseconds to delay the grow execution after theft to ensure it doesn't trigger too early and have no effect.
 // For timing reasons the delay between each step should be *close* 1/4th of this number, but there is some imprecision
 let cycleTimingDelay = 1600;
 let queueDelay = 100; // the delay that it can take for a script to start, used to pessimistically schedule things in advance
-let maxBatches = 40; // the max number of batches this daemon will spool up to avoid running out of IRL ram (TODO: Stop wasting RAM by scheduling batches so far in advance. e.g. Grind XP while waiting for cycle start!)
+let maxBatches = 50; // the max number of batches this daemon will spool up to avoid running out of IRL ram (TODO: Stop wasting RAM by scheduling batches so far in advance. e.g. Grind XP while waiting for cycle start!)
 let maxTargets = 0; // Initial value, will grow if there is an abundance of RAM
 let maxPreppingAtMaxTargets = 3; // The max servers we can prep when we're at our current max targets and have spare RAM
 // Allows some home ram to be reserved for ad-hoc terminal script running and when home is explicitly set as the "preferred server" for starting a helper 
@@ -116,7 +116,7 @@ function ps(ns, server, canUseCache = true) {
 function shouldReserveMoney() {
     let playerMoney = _ns.getServerMoneyAvailable("home");
     if (!doesFileExist("SQLInject.exe", "home")) {
-        if (playerMoney > 20000000)
+        if (playerMoney > 200000000)
             return true; // Start saving at 200m of the 250m required for SQLInject
     } else if (!playerStats.has4SDataTixApi) {
         if (playerMoney >= (bitnodeMults.FourSigmaMarketDataApiCost * 25000000000) / 2)
