@@ -8,150 +8,6 @@ import {
     formatDuration, formatMoney, formatNumberShort, disableLogs
 } from './helpers.js'
 
-<<<<<<< HEAD
-//const argsSchema = [
-//   ['h', false],
-//];
-
-//export function autocomplete(data, args) {
-//    data.flags(argsSchema);
-//    return [];
-//}
-
-/** @param {NS} ns **/
-export async function main(ns) {
-
-    const cities = ["Aevum", "Chongqing", "Sector-12", "New Tokyo", "Ishima", "Volhaven"];
-    const jobs = ["Operations", "Engineer", "Business", "Management", "Research & Development"];
-    const upgrades = ["FocusWires", "Neural Accelerators", "Speech Processor Implants",
-        "Nuoptimal Nootropic Injector Implants", "Smart Factories"];
-    let dictSourceFiles = await getActiveSourceFiles(ns);
-    const player = ns.getPlayer();
-    const rootname = "FUBAR";
-
-    let bitnodeMults = await tryGetBitNodeMultipliers(ns);
-
-    const preferredUpgradeOrder = [
-        "Smart Supply",
-    ];
-
-    const preferredIndustryOrder = [
-        "Agriculture",
-        "Software",
-    ]
-
-
-    let corp = ns.corporation.getCorporation(); //refresh corp stats
-
-    let multi = player.bitNodeN === 1 || player.bitNodeN === 3 ? 1 : 0;
-    if (dictSourceFiles[5] > 0) multi = ns.getBitNodeMultipliers().CorporationValuation;
-
-    if (!ns.corporation.hasUnlockUpgrade("Warehouse API") && ns.corporation.getUnlockUpgradeCost("Warehouse API") > corp.funds) {
-        throw new Error("FAILED: Insufficient funds for Warehouse API, required")
-    } else if (!ns.corporation.hasUnlockUpgrade("Warehouse API") && ns.corporation.getUnlockUpgradeCost("Warehouse API") < corp.funds) {
-        ns.corporation.unlockUpgrade("Warehouse API");
-    }
-
-
-
-
-    // DO THE THINGS IN ORDER /////////////
-
-    if (!player.hasCorporation) startCorp(ns, rootname);
-
-    getNoffer(ns); //get initial funding offer
-
-    for (let upgrade of preferredUpgradeOrder) {    // Check for and purchase initial upgrades
-        let hasUpgrade = ns.corporation.hasUnlockUpgrade(upgrade);
-        if (!hasUpgrade) purchaseUpgrade(ns, upgrade)
-    }
-
-    buildDivisions(ns); //create division framework
-
-    ///////////////////////////////////////
-
-    /*
-    let corp = ns.corporation.getCorporation()
-    let divisions = [];
-    for (const division of corp.divisions) {
-
-        let name = division.name
-        divisions.push(name);
-        ns.print(name)
-    }
-    */
-
-
-
-    ///////////////////////// FUNCTIONS /////////////////////////////////////////
-
-
-    function startCorp(ns, rootname) { //function to start a corporation
-        const player = ns.getPlayer(); // refresh player data
-        const selfFund = player.money >= 1.5e11
-        player.bitNodeN != 3
-        if (selfFund) {
-            const worked = ns.corporation.createCorporation(rootname, selfFund);
-            return worked;
-        } else if (!selfFund && player.bitNodeN == 3) {
-            const worked = ns.corporation.createCorporation(rootname, selfFund);
-            return worked;
-        } else {
-            ns.print("FAILED: Too poor to start a company and you're not in BN3 (required for seed money option)");
-        }
-        if (!worked) {
-            ns.print("FAILED: Cant create ", rootname);
-            return;
-        }
-
-    }
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    function getNoffer(ns, phase) {
-
-        switch (phase) {
-            case 1:
-            let target_funds = 2e11;
-                let roundOne = ns.corporation.getInvestmentOffer();
-                if (roundOne.round === 1) {
-                    //await prepRoundOne(ns);
-                    if (roundOne.funds < target_funds) {
-                        //await ns.sleep(10 * 1000); //move timer
-                        roundOne = ns.corporation.getInvestmentOffer();
-                    }
-                    ns.corporation.acceptInvestmentOffer();
-                    const corp = ns.corporation.getCorporation();
-                    if (corp.funds < target_funds) ns.print("Investment offer not sufficient, try again in 10s")
-
-                }
-                break;
-
-                
-            case 2:
-            let target_funds = 3e12;
-
-                let roundTwo = ns.corporation.getInvestmentOffer();
-                if (roundTwo.round === 2) {
-                    //await prepRoundOne(ns);
-                    if (roundTwo.funds < target_funds) {
-                        //await ns.sleep(10 * 1000); //move timer
-                        roundTwo = ns.corporation.getInvestmentOffer();
-                    }
-                    ns.corporation.acceptInvestmentOffer();
-                    const corp = ns.corporation.getCorporation();
-                    if (corp.funds < target_funds) ns.print("Investment offer not sufficient, try again in 10s")
-
-                }
-
-                break;
-
-
-            default:
-                break;
-        }
-    }
-}
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-=======
 
 /**  
  * 
@@ -355,7 +211,6 @@ export function startCorp(ns, rootname) { //function to start a corporation
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
->>>>>>> 1e014e09c15c0f48aee59999406075c89836621d
 function createIndustry(ns, div) {
     let corp = ns.corporation.getCorporation(); //refresh corp stats
     if (ns.corporation.getExpandIndustryCost(div) > corp.funds) {
@@ -435,22 +290,6 @@ function buildDivisions(ns) {
         }
     }
 }
-<<<<<<< HEAD
-//////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-
-
-
-
-
-
-
-
-
-
-=======
->>>>>>> 1e014e09c15c0f48aee59999406075c89836621d
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -467,11 +306,7 @@ function advertise(ns, div) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-<<<<<<< HEAD
-function officeUpgrade(ns, div) {
-=======
 function divUpgrader(ns, div) {
->>>>>>> 1e014e09c15c0f48aee59999406075c89836621d
     for (let i = 1; i <= 2; i++) {
         for (const upgrade of upgrades) {
             const level = ns.corporation.getUpgradeLevel(upgrade);
@@ -486,8 +321,6 @@ function divUpgrader(ns, div) {
     }
 }
 
-<<<<<<< HEAD
-=======
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 export function officeUpgrader(ns, divname, cityName, newsize) {
 
@@ -679,7 +512,6 @@ export async function main(ns) {
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
->>>>>>> 1e014e09c15c0f48aee59999406075c89836621d
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // Hardware 125 (12.5), AI Cores 75 (7.5), Real Estate 27k (2.7k)
