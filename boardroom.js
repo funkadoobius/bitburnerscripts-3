@@ -15,19 +15,19 @@ import {
 const phase = args[0];
 const rootname = "FUBAR";
 const targetDiv = "Agriculture";
-const player = ns.getPlayer();
+let player = ns.getPlayer();
 let corp = ns.corporation.getCorporation(); //refresh corp stats
 const cities = ["Aevum", "Chongqing", "Sector-12", "New Tokyo", "Ishima", "Volhaven"];
 
-const jobs = [];
-const materials = [];
-const corpUpgrades = [];
-const divUpgrades = [];
+var jobs = [];
+var materials = [];
+var corpUpgrades = [];
+var divUpgrades = [];
 
 let dictSourceFiles = await getActiveSourceFiles(ns);
 
-const targetOfficeSize = 0;
-const targetWHSize = 0;
+var targetOfficeSize = 0;
+var targetWHSize = 0;
 
 const preferredUpgradeOrder = [
     "Smart Supply",
@@ -146,49 +146,12 @@ switch (phase) {
 
 
 }
-
-export function getNoffer(ns, round) {
-
-    switch (round) {
-        case 1:
-            let target_funds = 2e11;
-            let roundOne = ns.corporation.getInvestmentOffer();
-            if (roundOne.round === 1) {
-                //await prepRoundOne(ns);
-                if (roundOne.funds < target_funds) {
-                    //await ns.sleep(10 * 1000); //move timer
-                    roundOne = ns.corporation.getInvestmentOffer();
-                }
-                ns.corporation.acceptInvestmentOffer();
-                const corp = ns.corporation.getCorporation();
-                if (corp.funds < target_funds) ns.print("Investment offer not sufficient, try again in 10s")
-
-            }
-            break;
-
-
-        case 2:
-            let target_funds = 3e12;
-
-            let roundTwo = ns.corporation.getInvestmentOffer();
-            if (roundTwo.round === 2) {
-                //await prepRoundOne(ns);
-                if (roundTwo.funds < target_funds) {
-                    //await ns.sleep(10 * 1000); //move timer
-                    roundTwo = ns.corporation.getInvestmentOffer();
-                }
-                ns.corporation.acceptInvestmentOffer();
-                const corp = ns.corporation.getCorporation();
-                if (corp.funds < target_funds) ns.print("Investment offer not sufficient, try again in 10s")
-
-            }
-            break;
-        default:
-            break;
-    }
-}
-
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+startCorp()
+check for a corp, if it doesnt exist make it based on the root name provided at the top
+ 
+*/
 
 export function startCorp(ns, rootname) { //function to start a corporation
     const player = ns.getPlayer(); // refresh player data
@@ -210,85 +173,117 @@ export function startCorp(ns, rootname) { //function to start a corporation
 
 }
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+getNoffer()
+get an investment offer and accept based on the round number
+*/
 
-function createIndustry(ns, div) {
-    let corp = ns.corporation.getCorporation(); //refresh corp stats
-    if (ns.corporation.getExpandIndustryCost(div) > corp.funds) {
-        ns.print("FAILED: Insufficient funds to expand into ", div);
-        return;
+
+export function getNoffer(ns) {
+
+    let offer = ns.corporation.getInvestmentOffer();
+
+    switch (offer.round) {
+        case 1:
+            let target_funds = 2e11;
+            break;
+        case 2:
+            let target_funds = 3e12;
+            break;
+        case 3:
+            let target_funds = 3e14;
+            break;
+        case 4:
+            let target_funds = 3e17;
+            break;
+
+        default:
+            break;
     }
-    ns.corporation.expandIndustry(div, rootname.concat(div));
-    return true;
+
+    if (offer.funds > target_funds) {
+        ns.corporation.acceptInvestmentOffer();
+        let corp = ns.corporation.getCorporation();
+    }
 }
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+createIndustry() 
+check for the presence of a particular industry based on a list array. if not found, create it.
+*/
+
+function createIndustry(ns, div, city) {
+    let corp = ns.corporation.getCorporation(); //refresh corp stats
+    if (ns.corporation.getExpandIndustryCost(div) < corp.funds) {
+        ns.corporation.expandIndustry(div, city);
+        return;
+    } else ns.print("FAILED: Insufficient funds to expand into ", div);
+}
+
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+purchaseUpgrade()
+purchase corp unlockable upgrades based on a predfined order list.
+*/
+
 function purchaseUpgrade(ns, upgrade) {
     let corp = ns.corporation.getCorporation(); //refresh corp stats
-    if (ns.corporation.getUnlockUpgradeCost(upgrade) > corp.funds) {
-        ns.print("FAILED: Insufficient funds to buy ", upgrade);
+    if (ns.corporation.getUnlockUpgradeCost(upgrade) < corp.funds) {
+        ns.corporation.unlockUpgrade(upgrade);
         return;
-    }
-    ns.corporation.unlockUpgrade(upgrade);
-    return true;
+    } else ns.print("FAILED: Insufficient funds to buy ", upgrade);
 }
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-function buildDivisions(ns) {
+/*
+buildDivision(divIndex)
+build a division and expand in each city, accepts the index number of the desired division from the preferred industry list. start with 0
+then make a warehouse if we can afford it
+then set basic sales
+*/
+
+export function buildDivision(ns, divIndex) {
     let corp = ns.corporation.getCorporation();
+    let div = preferredIndustryOrder[divIndex];
 
-    for (let div of preferredIndustryOrder) {
-        let divExists = corp.divisions.find(d => d.type === div); //check for division
-        if (!divExists) {
-            createIndustry(ns, div);
 
-        };//if there isnt one, make one, or move on to the next
+    let divExists = corp.divisions.find(d => d.type === div); //check for division
+    if (!divExists) {//if there isnt one, make one, or move on to the next
+        createIndustry(ns, div);
+    };
 
-        let division = ns.corporation.getDivision(rootname.concat(div)); // load object from the table
-        let currentCities = [];
+    let division = ns.corporation.getDivision(div); // load div info 
 
-        //ns.print(division.cities);
-        if (division.cities.length < cities.length) { // if the div is in every city, move on
-            for (const city of cities) {
-                if (division.cities.includes(city)) currentCities.push(city);
-                if (!division.cities.includes(city) && ns.corporation.getExpandCityCost() < corp.funds) {
-                    ns.corporation.expandCity(rootname.concat(div), city);
-                    currentCities.push(city);
-                } else {
-                    ns.print(`FAILED: Insufficient funds to expand ${div} into ${city}`);
-                    ;
-                }
-            }
-        }
-        for (const city of currentCities) {
-            if (!ns.corporation.hasWarehouse(rootname.concat(div), city)) {
+
+    //ns.print(division.cities);
+    if (division.cities.length < cities.length) { // if the size of the array containing the cities this division is currently in is less than the total number of cites
+        for (let city of cities) {
+
+            if (!division.cities.includes(city) && ns.corporation.getExpandIndustryCost(div) < corp.funds) {
+                ns.corporation.expandCity(div, city);
+
+            } else ns.print(`FAILED: Insufficient funds to expand ${div} into ${city}`);
+
+
+            if (!ns.corporation.hasWarehouse(div, city)) {
                 corp = ns.corporation.getCorporation();
                 if (ns.corporation.getPurchaseWarehouseCost() < corp.funds) {
-                    ns.corporation.purchaseWarehouse(rootname.concat(div), city);
+                    ns.corporation.purchaseWarehouse(div, city);
                 } else ns.print(`FAILED: Insufficient funds to Purchase Warehouse in ${city}`);
 
             }
 
-            let warehouse = ns.corporation.getWarehouse(rootname.concat(div), city);
-
-            if (warehouse.size < 300) {
-                corp = ns.corporation.getCorporation();
-                if (ns.corporation.getUpgradeWarehouseCost(rootname.concat(div), city) < corp.funds) {
-                    ns.corporation.upgradeWarehouse(rootname.concat(div), city);
-                    warehouse = ns.corporation.getWarehouse(rootname.concat(div), city);
-                } else {
-                    ns.print(`FAILED: Insufficient funds to Upgrade Warehouse in ${city}`);
-
-                }
-
-            } ns.corporation.getHireAdVertCount
-
-            ns.corporation.sellMaterial(rootname.concat(div), city, "Food", "MAX", "MP+10");
-            ns.corporation.sellMaterial(rootname.concat(div), city, "Plants", "MAX", "MP+10");
+            ns.corporation.sellMaterial(div, city, "Food", "MAX", "MP+10");
+            ns.corporation.sellMaterial(div, city, "Plants", "MAX", "MP+10");
 
             if (!warehouse.smartSupplyEnabled) {
-                ns.corporation.setSmartSupply(rootname.concat(div), city, true);
+                ns.corporation.setSmartSupply(div, city, true);
 
             }
         }
     }
+
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
