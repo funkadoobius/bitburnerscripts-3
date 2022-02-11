@@ -1,46 +1,61 @@
-/** @param {NS} ns **/
-export async function main(ns) {
-	const cities = ["Aevum", "Chongqing", "Sector-12", "New Tokyo", "Ishima", "Volhaven"];
-	const upgrades = ["FocusWires", "Neural Accelerators", "Speech Processor Implants",
-		"Nuoptimal Nootropic Injector Implants", "Smart Factories"];
+/**@param {NS} ns **/
 
-	let corp = ns.corporation.getCorporation(); //refresh corp stats
+const cities = ["Aevum", "Chongqing", "Sector-12", "New Tokyo", "Ishima", "Volhaven"];
+const upgrades = ["FocusWires", "Neural Accelerators", "Speech Processor Implants",
+	"Nuoptimal Nootropic Injector Implants", "Smart Factories"];
+
+let corp = ns.corporation.getCorporation(); //refresh corp stats
+
+const phase = 1;
+const materials = [];
+
+const hardware_amt = 0;
+const core_amt = 0;
+const realestate_amt = 0;
+const robot_amt = 0;
+
+switch (phase) {
+	case 1:
+		materials = [
+			["Hardware", 2800],
+			["AI Cores", 2520],
+			["Real Estate", 146400],
+			["Robots", 0],
+		];
+		break;
+
+	case 2:
+		materials = [
+			["Hardware", 2800],
+			["AI Cores", 2520],
+			["Real Estate", 146400],
+			["Robots", 96],
+		];
+		break;
+
+	case 3:
+		materials = [
+			["Hardware", 2800],
+			["AI Cores", 2520],
+			["Real Estate", 146400],
+			["Robots", 96],
+		];
+
+	default:
+		break;
+
+}
+
+
+export async function main(ns) {
+
 
 	if (!ns.corporation.hasUnlockUpgrade("Warehouse API") && ns.corporation.getUnlockUpgradeCost("Warehouse API") > corp.funds) {
 		throw new Error("FAILED: Insufficient funds for Warehouse API, required")
 	} else if (!ns.corporation.hasUnlockUpgrade("Warehouse API") && ns.corporation.getUnlockUpgradeCost("Warehouse API") < corp.funds) {
 		ns.corporation.unlockUpgrade("Warehouse API");
 	}
-const phase = 1;
 
-switch (phase){
-	case 1:
-	const materials = ["Hardware", "AI Cores", "Real Estate"];
-	const hardware_amt = 2800;
-	const core_amt = 2520;
-	const realestate_amt = 146400;
-	const robot_amt = 96;	
-	break;
-
-case 2:
-	const materials = ["Hardware", "AI Cores", "Robots", "Real Estate"];
-	const hardware_amt = 2800;
-	const core_amt = 2520;
-	const realestate_amt = 146400;
-	const robot_amt = 96;
-	break;
-
-case 3:
-	const materials = ["Hardware", "AI Cores", "Robots", "Real Estate"];
-	const hardware_amt = 2800;
-	const core_amt = 2520;
-	const realestate_amt = 146400;
-	const robot_amt = 96;
-
-	default:
-	break;
-
-}
 
 
 	for (let div of corp.divisions) {
