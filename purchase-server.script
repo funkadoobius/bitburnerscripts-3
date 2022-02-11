@@ -1,0 +1,52 @@
+function threadcalc(server, script) {
+    var threads = Math.floor((getServerMaxRam(server) - getServerUsedRam(server)) / getScriptRam(script));
+    //if (threads == 0) {
+    //    tprint("Threadcounter failed, assigning 1 thread")
+    //   threads = 1
+    //}
+    tprint(threads)
+    return threads;
+}
+
+// How much RAM each purchased server will have. In this case, it'll
+// be 8GB.
+var ram = 4096; // 16384 max
+
+// Iterator we'll use for our loop
+var i = 0
+
+var script = args[0];
+if (script == "") {
+  script = "target.script"
+}
+var target = args[1];
+
+
+//var threads = threadcalc(hostname, script)
+
+
+// Continuously try to purchase servers until we've reached the maximum
+// amount of servers
+while (i < getPurchasedServerLimit()) {
+    //tprint(i)
+    // Check if we have enough money to purchase a server
+    if (getServerMoneyAvailable("home") > getPurchasedServerCost(ram)) {
+        // If we have enough money, then:
+        //  1. Purchase the server
+        //  2. Copy our hacking script onto the newly-purchased server
+        //  3. Run our hacking script on the newly-purchased server with 3 threads
+        //  4. Increment our iterator to indicate that we've bought a new server
+        print("Taking " + getPurchasedServerCost(ram) + "for " + ram+ "GB server")
+        var hostname = purchaseServer("pserv-" + i, ram);
+        //scp(script, hostname);
+
+        //var threads = threadcalc(hostname, script);
+
+        //exec(script, hostname, threads, target);
+        ++i;
+        sleep(300);
+    }else{
+        print("Needs " + (getPurchasedServerCost(ram)/1000000).toFixed(2));
+    }
+  sleep(1000)  
+}
