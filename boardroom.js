@@ -278,7 +278,7 @@ function buildDivisions(ns) {
 
                 }
 
-            }
+            } ns.corporation.getHireAdVertCount
 
             ns.corporation.sellMaterial(rootname.concat(div), city, "Food", "MAX", "MP+10");
             ns.corporation.sellMaterial(rootname.concat(div), city, "Plants", "MAX", "MP+10");
@@ -404,8 +404,6 @@ export async function main(ns) {
     } else if (!ns.corporation.hasUnlockUpgrade("Warehouse API") && ns.corporation.getUnlockUpgradeCost("Warehouse API") < corp.funds) {
         ns.corporation.unlockUpgrade("Warehouse API");
     }
-
-
 
 
     // DO THE THINGS IN ORDER /////////////
