@@ -80,7 +80,7 @@ export async function main(ns) {
                 ["Smart Factories", 2],
                 ["Wilson Analytics", 0],
                 ["Project Insight", 0],
-                ["Dreamsense", 0],
+                ["DreamSense", 0],
                 ["ABC SalesBots", 0],
             ];
 
@@ -120,7 +120,7 @@ export async function main(ns) {
                 ["Smart Factories", 2],
                 ["Wilson Analytics", 0],
                 ["Project Insight", 0],
-                ["Dreamsense", 0],
+                ["DreamSense", 0],
                 ["ABC SalesBots", 0],
 
             ];
@@ -159,7 +159,7 @@ export async function main(ns) {
                 ["Smart Factories", 2],
                 ["Wilson Analytics", 0],
                 ["Project Insight", 0],
-                ["Dreamsense", 0],
+                ["DreamSense", 0],
                 ["ABC SalesBots", 0],
 
             ];
@@ -240,12 +240,33 @@ export async function main(ns) {
     check for the presence of a particular industry based on a list array. if not found, create it.
     */
 
-    function createIndustry(ns, div, city) {
+    function createIndustry(ns, div) {
+
+        ns.print("Inside createIndustry(ns, ", div, ")");
         let corp = ns.corporation.getCorporation(); //refresh corp stats
-        if (ns.corporation.getExpandIndustryCost(div.type) < corp.funds) {
-            ns.corporation.expandIndustry(div.name, city);
-            return;
-        } else ns.print("FAILED: Insufficient funds to expand into ", div);
+        ns.print("refreshed corp. stats");
+        ns.print("corp.divisions.find(d => d === div) - ", corp.divisions.find(d => d === "Agriculture"));
+
+        var existingDivisions = [];
+
+        corp.divisions.forEach(d => {
+            existingDivisions.push(d.name);
+            ns.print(d.name, " - ", div, " added to array.");
+        });
+
+        if (existingDivisions.length == 0 && ns.corporation.getExpandIndustryCost(div) < corp.funds) {
+            ns.print("ns.corporation.getExpandIndustryCost(div) - ", ns.corporation.getExpandIndustryCost(div));
+
+            ns.print("Expanding Industry...");
+            ns.corporation.expandIndustry(div, div);
+            ns.print("SUCCESS");
+
+        } else ns.print("FAILED: could not create new division. - ", div);
+
+
+
+
+
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -270,47 +291,42 @@ export async function main(ns) {
     then set basic sales
     */
 
-    function buildDivision(ns, divIndex) {
+    function buildDivision(ns, divIndex, city) {
         let corp = ns.corporation.getCorporation();
         let div = preferredIndustryOrder[divIndex];
-
-
-        let divExists = corp.divisions.find(d => d.type === div); //check for division
-        if (!divExists) {//if there isnt one, make one, or move on to the next
-            createIndustry(ns, div);
-        };
+        //check for division
+        createIndustry(ns, div, city);
 
         let division = ns.corporation.getDivision(div); // load div info 
 
         for (let unlock of preferredUpgradeOrder) { // purchase corp unlocks based on the list, like smart supply
-            if (!hasUnlockUpgrade(unlock)) purchaseUnlock(ns, unlock);
+            if (!ns.corporation.hasUnlockUpgrade(unlock)) purchaseUnlock(ns, unlock);
 
         }
 
         //ns.print(division.cities);
         if (division.cities.length < cities.length) { // if the size of the array containing the cities this division is currently in is less than the total number of cites
-            for (let city of cities) {
+            for (let cityName of cities) {
 
-                if (!division.cities.includes(city) && ns.corporation.getExpandIndustryCost(div) < corp.funds) {
-                    ns.corporation.expandCity(div, city);
+                if (!division.cities.includes(cityName) && ns.corporation.getExpandCityCost() < corp.funds) {
+                    ns.corporation.expandCity(division.name, cityName);
+                    ns.print(division.name, " expanded into ", cityName);
 
-                } else ns.print(`FAILED: Insufficient funds to expand ${div} into ${city}`);
 
 
-                if (!ns.corporation.hasWarehouse(div, city)) {
-                    corp = ns.corporation.getCorporation();
-                    if (ns.corporation.getPurchaseWarehouseCost() < corp.funds) {
-                        ns.corporation.purchaseWarehouse(div, city);
-                    } else ns.print(`FAILED: Insufficient funds to Purchase Warehouse in ${city}`);
 
-                }
+                } else ns.print(`FAILED: to expand ${div} into ${cityName}`);
 
-                ns.corporation.sellMaterial(div, city, "Food", "MAX", "MP+10");
-                ns.corporation.sellMaterial(div, city, "Plants", "MAX", "MP+10");
-
+                ns.corporation.sellMaterial(division.name, cityName, "Food", "MAX", "MP+10");
+                ns.print("FOOD set to be sold in ", cityName);
+                ns.corporation.sellMaterial(division.name, cityName, "Plants", "MAX", "MP+10");
+                ns.print("Plants set to be sold in ", cityName);
+                var warehouse = ns.corporation.getWarehouse(division.name, cityName);
+                ns.print("warehouse created in ", cityName);
                 if (!warehouse.smartSupplyEnabled) {
-                    ns.corporation.setSmartSupply(div, city, true);
 
+                    ns.corporation.setSmartSupply(division.name, cityName, true);
+                    ns.print("Smart Supply enabled for ", cityName);
                 }
             }
         }
@@ -324,7 +340,7 @@ export async function main(ns) {
             corp = ns.corporation.getCorporation();
             if (ns.corporation.getHireAdVertCost(div) < corp.funds) {
                 ns.corporation.hireAdVert(div);
-            } else ns.pring(`FAILED: Insufficient funds to hire AdVert`);
+            } else ns.print(`FAILED: Insufficient funds to hire AdVert`);
             return;
         }
     }
@@ -335,15 +351,16 @@ export async function main(ns) {
     function corpUpgrader(ns) {
 
         corpUpgrades.forEach(upgrade => {
-            if (ns.corporation.getUpgradeLevelCost(upgrade[0]) > corp.funds) {
-                throw new Error(`Insufficient funds to Upgrade ${upgrade} to level ${i}`);
-            }
             let i = 1;
-            while (i <= upgrade[1]) {
-                ns.print(cityName, " ", upgrade[0], " ", upgrade[1]);
-                ns.corporation.levelUpgrade(upgrade[0]);
-                //await ns.sleep(200);
-            }
+            if (ns.corporation.getUpgradeLevelCost(upgrade[0]) < corp.funds) {
+                while (i <= upgrade[1]) {
+                    ns.print(" ", upgrade[0], " ", upgrade[1]);
+                    ns.corporation.levelUpgrade(upgrade[0]);
+                    //await ns.sleep(200);
+                }
+            } else ns.print(`Insufficient funds to Upgrade ${upgrade[0]} to level ${i}`);
+
+
         });
     }
 
@@ -371,6 +388,7 @@ export async function main(ns) {
     */
     function fillOffice(ns, divname, cityName) {
 
+        let thisOffice = ns.corporation.getOffice(divname, cityName);
         let i = 0;
         let newhires = thisOffice.size - thisOffice.employees.length;
 
@@ -397,22 +415,33 @@ export async function main(ns) {
     */
 
     function whUpgrader(ns, divname, cityName) {
-        var wh_size = ns.corporation.getWarehouse(div.name, cityName).size; //get the current wh size
-        var wh_size_used = ns.corporation.getWarehouse(div.name, cityName).sizeUsed; //get the amt of the wh currently used
-        var wh_percent_used = (wh_size_used / wh_size) * 100; // math for percentage wh utilization
+
+        if (!ns.corporation.hasWarehouse(divname, cityName)) {
+            corp = ns.corporation.getCorporation();
+            if (ns.corporation.getPurchaseWarehouseCost() < corp.funds) {
+                ns.corporation.purchaseWarehouse(divname, cityName);
+            } else {
+                ns.print(`FAILED: Insufficient funds to Purchase Warehouse in ${cityName}`);
+                return;
+            }
+        }
+
+        var wh_size = ns.corporation.getWarehouse(divname, cityName).size; //get the current wh size
+        // var wh_size_used = ns.corporation.getWarehouse(div.name, cityName).sizeUsed; //get the amt of the wh currently used
+        //var wh_percent_used = (wh_size_used / wh_size) * 100; // math for percentage wh utilization
 
         while (wh_size < targetWHSize) { // if the wh is too small
             // ns.print(wh_size);
             // ns.print(wh_percent_used.toFixed(0));
             // ns.print(div.name);
             // ns.print(cityName);
-            ns.print(ns.corporation.getUpgradeWarehouseCost(div.name, cityName)) // upgrade the wh
+            ns.print(ns.corporation.getUpgradeWarehouseCost(divname, cityName)) // upgrade the wh
 
             // reload wh stats before looping
-            ns.corporation.upgradeWarehouse(div.name, cityName);
-            wh_size = ns.corporation.getWarehouse(div.name, cityName).size;
-            wh_size_used = ns.corporation.getWarehouse(div.name, cityName).sizeUsed;
-            wh_percent_used = (wh_size_used / wh_size) * 100;
+            ns.corporation.upgradeWarehouse(divname, cityName);
+            wh_size = ns.corporation.getWarehouse(divname, cityName).size;
+            //wh_size_used = ns.corporation.getWarehouse(div.name, cityName).sizeUsed;
+            //wh_percent_used = (wh_size_used / wh_size) * 100;
 
             //await ns.sleep(200);
 
@@ -431,49 +460,47 @@ export async function main(ns) {
     buildDivision(ns, 0);
 
     for (let div of corp.divisions) { //loop through divisions
-        let divExists = corp.divisions.find(d => d.type === targetDiv); //check for the division were managing
+        //check for the division 
+        if (corp.divisions.find(d => d.type === targetDiv)) {
 
-        if (divExists) {
+            for (let cityName of cities) { //loop through city master list
 
-            for (let cityName of div.cities) {
+                // if cityname is not in the list of cities this division is already in, expand if possible
+                if (!div.cities.find(d => d === cityName) && getExpandCityCost() < corp.funds) {
+                    ns.corporation.expandCity(div.name, cityName);
+                };
 
-                officeUpgrader(ns, div.name, cityName, targetOfficeSize);
-                fillOffice(ns, div.name, cityName);
-                whUpgrader(ns, div.name, cityName);
-                advertise(ns, div.name);
-                corpUpgrader(ns);
+                if (div.cities.find(d => d === cityName) && ns.corporation.hasWarehouse(div.name, cityName)) {
+                    await officeUpgrader(ns, div.name, cityName, targetOfficeSize);
+
+                    await fillOffice(ns, div.name, cityName);
+                    await whUpgrader(ns, div.name, cityName);
+                    await advertise(ns, div.name);
+                    await corpUpgrader(ns);
 
 
-                for (let material of materials) {
-                    var amt = 0;
-                    let currentstock = ns.corporation.getMaterial(div.name, cityName, materials[material]).qty
-                    switch (materials[material]) {
-                        case "Hardware":
-                            if (currentstock < hardware_amt) amt = hardware_amt - currentstock;
-                            break;
-                        case "AI Cores":
-                            if (currentstock < core_amt) amt = core_amt - currentstock;
-                            break;
-                        case "Real Estate":
-                            if (currentstock < realestate_amt) amt = realestate_amt - currentstock;
-                            break;
-                        case "Robots":
-                            if (currentstock < robot_amt) amt = robot_amt - currentstock;
-                            break;
-                        default:
-                            amt = 0;
-                            break;
+                    for (let material of materials) {
+                        var amt = 0;
+                        ns.print(material[0]);
+                        let currentstock = ns.corporation.getMaterial(div.name, cityName, material[0]).qty
+
+                        if (currentstock < material[1]) {
+
+                            amt = material[1] - currentstock;
+                            ns.print("Not enough ", material[0], ", needs ", material[1], ", has ", currentstock, " purchasing ", amt);
+
+
+                        }
+
+                        ns.print(div.name)
+                        ns.print(cityName);
+                        ns.print(material[0]);
+                        ns.print(amt);
+
+                        if (amt > 0) ns.corporation.buyMaterial(div.name, cityName, material[0], (0.1 * amt));
+                        await ns.sleep(1000)
+                        ns.corporation.buyMaterial(div.name, cityName, material[0], 0)
                     }
-
-                    ns.print(div.name)
-                    ns.print(cityName);
-                    ns.print(materials[material]);
-                    ns.print(amt);
-
-                    if (amt > 0) ns.corporation.buyMaterial(div.name, cityName, materials[material], (0.1 * amt));
-                    await ns.sleep(1000)
-                    ns.corporation.buyMaterial(div.name, cityName, materials[material], 0)
-
                 }
 
 
@@ -553,4 +580,4 @@ export async function main(ns) {
             await ns.corporation.assignJob("Agriculture", city, office.employees[1], "Engineer");
             await ns.corporation.assignJob("Agriculture", city, office.employees[2], "Business");
         }*/
-}
+};
