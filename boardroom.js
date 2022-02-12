@@ -64,9 +64,9 @@ export async function main(ns) {
             ]
 
             materials = [
-                ["Hardware", 2800],
-                ["AI Cores", 2520],
-                ["Real Estate", 146400],
+                ["Hardware", 125],
+                ["AI Cores", 75],
+                ["Real Estate", 27000],
                 ["Robots", 0],
             ];
 
@@ -115,8 +115,8 @@ export async function main(ns) {
                 ["Neural Accelerators", 2],
                 ["Speech Processor Implants", 2],
                 ["Nuoptimal Nootropic Injector Implants", 2],
-                ["Smart Storage", 0],
-                ["Smart Factories", 2],
+                ["Smart Storage", 10],
+                ["Smart Factories", 10],
                 ["Wilson Analytics", 0],
                 ["Project Insight", 0],
                 ["DreamSense", 0],
@@ -143,10 +143,10 @@ export async function main(ns) {
             ]
 
             materials = [
-                ["Hardware", 2800],
-                ["AI Cores", 2520],
-                ["Real Estate", 146400],
-                ["Robots", 96],
+                ["Hardware", 9300],
+                ["AI Cores", 6270],
+                ["Real Estate", 230400],
+                ["Robots", 726],
             ];
 
             corpUpgrades = [
@@ -154,8 +154,8 @@ export async function main(ns) {
                 ["Neural Accelerators", 2],
                 ["Speech Processor Implants", 2],
                 ["Nuoptimal Nootropic Injector Implants", 2],
-                ["Smart Storage", 0],
-                ["Smart Factories", 2],
+                ["Smart Factories", 10],
+                ["Smart Storage", 10],
                 ["Wilson Analytics", 0],
                 ["Project Insight", 0],
                 ["DreamSense", 0],
