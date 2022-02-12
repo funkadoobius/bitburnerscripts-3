@@ -1,4 +1,3 @@
-
 /**  
  * 
  @param {NS} ns */
@@ -317,17 +316,7 @@ export async function main(ns) {
 
                 } else ns.print(`FAILED: to expand ${div} into ${cityName}`);
 
-                ns.corporation.sellMaterial(division.name, cityName, "Food", "MAX", "MP+10");
-                ns.print("FOOD set to be sold in ", cityName);
-                ns.corporation.sellMaterial(division.name, cityName, "Plants", "MAX", "MP+10");
-                ns.print("Plants set to be sold in ", cityName);
-                var warehouse = ns.corporation.getWarehouse(division.name, cityName);
-                ns.print("warehouse created in ", cityName);
-                if (!warehouse.smartSupplyEnabled) {
 
-                    ns.corporation.setSmartSupply(division.name, cityName, true);
-                    ns.print("Smart Supply enabled for ", cityName);
-                }
             }
         }
 
@@ -356,6 +345,7 @@ export async function main(ns) {
                 while (i <= upgrade[1]) {
                     ns.print(" ", upgrade[0], " ", upgrade[1]);
                     ns.corporation.levelUpgrade(upgrade[0]);
+                    i++;
                     //await ns.sleep(200);
                 }
             } else ns.print(`Insufficient funds to Upgrade ${upgrade[0]} to level ${i}`);
@@ -389,10 +379,10 @@ export async function main(ns) {
     function fillOffice(ns, divname, cityName) {
 
         let thisOffice = ns.corporation.getOffice(divname, cityName);
-        let i = 0;
+        let i = thisOffice.employees.length;
         let newhires = thisOffice.size - thisOffice.employees.length;
 
-        while (i < newhires) {
+        while (i < thisOffice.size) {
             ns.print("#employees: ", thisOffice.employees.length, " - office size: ", thisOffice.size)
             ns.corporation.hireEmployee(divname, cityName);
             ns.print("hired employee in ", cityName, ", ", (newhires - i), " left to go.");
@@ -415,35 +405,49 @@ export async function main(ns) {
     */
 
     function whUpgrader(ns, divname, cityName) {
-
+        corp = ns.corporation.getCorporation();
         if (!ns.corporation.hasWarehouse(divname, cityName)) {
-            corp = ns.corporation.getCorporation();
+
             if (ns.corporation.getPurchaseWarehouseCost() < corp.funds) {
                 ns.corporation.purchaseWarehouse(divname, cityName);
+                ns.print("warehouse created in ", cityName);
             } else {
                 ns.print(`FAILED: Insufficient funds to Purchase Warehouse in ${cityName}`);
                 return;
             }
         }
 
+        if (ns.corporation.hasWarehouse(divname, cityName)) {
+            ns.corporation.sellMaterial(divname, cityName, "Food", "MAX", "MP+10");
+            ns.print("FOOD set to be sold in ", cityName);
+            ns.corporation.sellMaterial(divname, cityName, "Plants", "MAX", "MP+10");
+            ns.print("Plants set to be sold in ", cityName);
+
+            var warehouse = ns.corporation.getWarehouse(divname, cityName);
+
+            if (!warehouse.smartSupplyEnabled) {
+
+                ns.corporation.setSmartSupply(divname, cityName, true);
+                ns.print("Smart Supply enabled for ", cityName);
+            }
+        }
+
         var wh_size = ns.corporation.getWarehouse(divname, cityName).size; //get the current wh size
+
+        ns.print(cityName, " warehouse size: ", wh_size);
+        ns.print(cityName, " warehouse target: ", targetWHSize);
+
         // var wh_size_used = ns.corporation.getWarehouse(div.name, cityName).sizeUsed; //get the amt of the wh currently used
         //var wh_percent_used = (wh_size_used / wh_size) * 100; // math for percentage wh utilization
 
         while (wh_size < targetWHSize) { // if the wh is too small
-            // ns.print(wh_size);
-            // ns.print(wh_percent_used.toFixed(0));
-            // ns.print(div.name);
-            // ns.print(cityName);
+
             ns.print(ns.corporation.getUpgradeWarehouseCost(divname, cityName)) // upgrade the wh
 
             // reload wh stats before looping
             ns.corporation.upgradeWarehouse(divname, cityName);
             wh_size = ns.corporation.getWarehouse(divname, cityName).size;
-            //wh_size_used = ns.corporation.getWarehouse(div.name, cityName).sizeUsed;
-            //wh_percent_used = (wh_size_used / wh_size) * 100;
 
-            //await ns.sleep(200);
 
         }
     }
@@ -466,17 +470,16 @@ export async function main(ns) {
             for (let cityName of cities) { //loop through city master list
 
                 // if cityname is not in the list of cities this division is already in, expand if possible
-                if (!div.cities.find(d => d === cityName) && getExpandCityCost() < corp.funds) {
+                if (!div.cities.find(d => d === cityName) && ns.corporation.getExpandCityCost() < corp.funds) {
                     ns.corporation.expandCity(div.name, cityName);
                 };
 
                 if (div.cities.find(d => d === cityName) && ns.corporation.hasWarehouse(div.name, cityName)) {
                     await officeUpgrader(ns, div.name, cityName, targetOfficeSize);
-
-                    await fillOffice(ns, div.name, cityName);
                     await whUpgrader(ns, div.name, cityName);
                     await advertise(ns, div.name);
                     await corpUpgrader(ns);
+                    await fillOffice(ns, div.name, cityName);
 
 
                     for (let material of materials) {
@@ -492,10 +495,10 @@ export async function main(ns) {
 
                         }
 
-                        ns.print(div.name)
-                        ns.print(cityName);
-                        ns.print(material[0]);
-                        ns.print(amt);
+                        //ns.print(div.name)
+                        //ns.print(cityName);
+                        //ns.print(material[0]);
+                        //ns.print(amt);
 
                         if (amt > 0) ns.corporation.buyMaterial(div.name, cityName, material[0], (0.1 * amt));
                         await ns.sleep(1000)
