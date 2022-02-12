@@ -12,6 +12,17 @@ import {
 /**  
  * 
  * @param @param {import(".").NS } ns **/
+
+
+let multi = player.bitNodeN === 1 || player.bitNodeN === 3 ? 1 : 0;
+if (dictSourceFiles[5] > 0) multi = ns.getBitNodeMultipliers().CorporationValuation;
+
+if (!ns.corporation.hasUnlockUpgrade("Warehouse API") && ns.corporation.getUnlockUpgradeCost("Warehouse API") > corp.funds) {
+    throw new Error("FAILED: Insufficient funds for Warehouse API, required")
+} else if (!ns.corporation.hasUnlockUpgrade("Warehouse API") && ns.corporation.getUnlockUpgradeCost("Warehouse API") < corp.funds) {
+    ns.corporation.unlockUpgrade("Warehouse API");
+}
+
 const phase = args[0];
 const rootname = "FUBAR";
 const targetDiv = "Agriculture";
@@ -22,6 +33,7 @@ const cities = ["Aevum", "Chongqing", "Sector-12", "New Tokyo", "Ishima", "Volha
 var jobs = [];
 var materials = [];
 var corpUpgrades = [];
+var corpUnlockables = [];
 var divUpgrades = [];
 
 let dictSourceFiles = await getActiveSourceFiles(ns);
@@ -36,10 +48,15 @@ const preferredUpgradeOrder = [
 const preferredIndustryOrder = [
     "Agriculture",
     "Software",
+    "Tobacco"
 ]
 
 switch (phase) {
     case 1:
+        targetOfficeSize = 3;
+        targetWHSize = 300;
+        advertTarget = 2;
+
         jobs = [
             ["Research & Development", 0],
             ["Business", 1],
@@ -48,8 +65,7 @@ switch (phase) {
             ["Operations", 1],
             ["Training", 0]
         ]
-        targetOfficeSize = 3;
-        targetWHSize = 300;
+
         materials = [
             ["Hardware", 2800],
             ["AI Cores", 2520],
@@ -68,12 +84,19 @@ switch (phase) {
             ["Project Insight", 0],
             ["Dreamsense", 0],
             ["ABC SalesBots", 0],
+        ];
 
+        corpUnlockables = [
+            "Smart Supply"
         ];
 
         break;
 
     case 2:
+        targetOfficeSize = 9;
+        targetWHSize = 2000;
+        advertTarget = 3;
+
         jobs = [
             ["Research & Development", 2],
             ["Business", 1],
@@ -82,8 +105,7 @@ switch (phase) {
             ["Operations", 2],
             ["Training", 0]
         ]
-        targetOfficeSize = 9;
-        targetWHSize = 2000;
+
         materials = [
             ["Hardware", 2800],
             ["AI Cores", 2520],
@@ -104,10 +126,16 @@ switch (phase) {
             ["ABC SalesBots", 0],
 
         ];
-
+        corpUnlockables = [
+            "Smart Supply"
+        ];
         break;
 
     case 3:
+        targetOfficeSize = 18;
+        targetWHSize = 3800;
+        advertTarget = 4;
+
         jobs = [
             ["Research & Development", 4],
             ["Business", 2],
@@ -116,8 +144,7 @@ switch (phase) {
             ["Operations", 4],
             ["Training", 0]
         ]
-        targetOfficeSize = 18;
-        targetWHSize = 3800;
+
         materials = [
             ["Hardware", 2800],
             ["AI Cores", 2520],
@@ -138,7 +165,9 @@ switch (phase) {
             ["ABC SalesBots", 0],
 
         ];
-
+        corpUnlockables = [
+            "Smart Supply"
+        ];
         break;
 
     default:
@@ -213,7 +242,7 @@ createIndustry()
 check for the presence of a particular industry based on a list array. if not found, create it.
 */
 
-function createIndustry(ns, div, city) {
+export function createIndustry(ns, div, city) {
     let corp = ns.corporation.getCorporation(); //refresh corp stats
     if (ns.corporation.getExpandIndustryCost(div) < corp.funds) {
         ns.corporation.expandIndustry(div, city);
@@ -227,12 +256,12 @@ purchaseUpgrade()
 purchase corp unlockable upgrades based on a predfined order list.
 */
 
-function purchaseUpgrade(ns, upgrade) {
+export function purchaseUnlock(ns, corpUpgrade) {
     let corp = ns.corporation.getCorporation(); //refresh corp stats
-    if (ns.corporation.getUnlockUpgradeCost(upgrade) < corp.funds) {
-        ns.corporation.unlockUpgrade(upgrade);
+    if (ns.corporation.getUnlockUpgradeCost(corpUpgrade) < corp.funds) {
+        ns.corporation.unlockUpgrade(corpUpgrade);
         return;
-    } else ns.print("FAILED: Insufficient funds to buy ", upgrade);
+    } else ns.print("FAILED: Insufficient funds to buy ", corpUpgrade);
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -255,6 +284,10 @@ export function buildDivision(ns, divIndex) {
 
     let division = ns.corporation.getDivision(div); // load div info 
 
+    for (let unlock of preferredUpgradeOrder) { // purchase corp unlocks based on the list, like smart supply
+        if (!hasUnlockUpgrade(unlock)) purchaseUnlock(ns, unlock);
+
+    }
 
     //ns.print(division.cities);
     if (division.cities.length < cities.length) { // if the size of the array containing the cities this division is currently in is less than the total number of cites
@@ -288,8 +321,8 @@ export function buildDivision(ns, divIndex) {
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-function advertise(ns, div) {
-    if (ns.corporation.getHireAdVertCount(div) < 4) {
+export function advertise(ns, div) {
+    if (ns.corporation.getHireAdVertCount(div) < advertTarget) {
         corp = ns.corporation.getCorporation();
         if (ns.corporation.getHireAdVertCost(div) < corp.funds) {
             ns.corporation.hireAdVert(div);
@@ -301,22 +334,24 @@ function advertise(ns, div) {
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-function divUpgrader(ns, div) {
-    for (let i = 1; i <= 2; i++) {
-        for (const upgrade of upgrades) {
-            const level = ns.corporation.getUpgradeLevel(upgrade);
-            if (level >= i) continue;
+export function corpUpgrader(ns) {
 
-            corp = ns.corporation.getCorporation();
-            if (ns.corporation.getUpgradeLevelCost(upgrade) > corp.funds) {
-                throw new Error(`Insufficient funds to Upgrade ${upgrade} to level ${i}`);
-            }
-            ns.corporation.levelUpgrade(upgrade);
+    corpUpgrades.forEach(upgrade => {
+        if (ns.corporation.getUpgradeLevelCost(upgrade[0]) > corp.funds) {
+            throw new Error(`Insufficient funds to Upgrade ${upgrade} to level ${i}`);
         }
-    }
+        let i = 1;
+        while (i <= upgrade[1]) {
+            ns.print(cityName, " ", upgrade[0], " ", upgrade[1]);
+            ns.corporation.levelUpgrade(upgrade[0]);
+            await ns.sleep(200);
+        }
+    });
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+
 export function officeUpgrader(ns, divname, cityName, newsize) {
 
     let thisOffice = ns.corporation.getOffice(divname, cityName);
@@ -332,6 +367,10 @@ export function officeUpgrader(ns, divname, cityName, newsize) {
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+fillOffice(division name, city name)
+fill all open positions in the specified office, then iterate through a 3d array to auto assign employees to positions, determined by phase
+*/
 export function fillOffice(ns, divname, cityName) {
 
     let i = 0;
@@ -353,18 +392,23 @@ export function fillOffice(ns, divname, cityName) {
     });
 }
 
+//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/*
+whUpgrader(division name, city name)
+increase the size of the warehouse, based on phase, 
+*/
+
 export function whUpgrader(ns, divname, cityName) {
     var wh_size = ns.corporation.getWarehouse(div.name, cityName).size; //get the current wh size
     var wh_size_used = ns.corporation.getWarehouse(div.name, cityName).sizeUsed; //get the amt of the wh currently used
     var wh_percent_used = (wh_size_used / wh_size) * 100; // math for percentage wh utilization
 
     while (wh_size < targetWHSize) { // if the wh is too small
-        ns.print(wh_size);
-        ns.print(wh_percent_used.toFixed(0));
-        ns.print(div.name);
-        ns.print(cityName);
+        // ns.print(wh_size);
+        // ns.print(wh_percent_used.toFixed(0));
+        // ns.print(div.name);
+        // ns.print(cityName);
         ns.print(ns.corporation.getUpgradeWarehouseCost(div.name, cityName)) // upgrade the wh
-
 
         // reload wh stats before looping
         ns.corporation.upgradeWarehouse(div.name, cityName);
@@ -383,72 +427,35 @@ export function whUpgrader(ns, divname, cityName) {
 
 export async function main(ns) {
 
-
-    let bitnodeMults = await tryGetBitNodeMultipliers(ns);
-
-
-
+    if (!player.hasCorporation) startCorp(ns, rootname); //chech for a corp, make one if needed
 
     let corp = ns.corporation.getCorporation(); //refresh corp stats
 
-    let multi = player.bitNodeN === 1 || player.bitNodeN === 3 ? 1 : 0;
-    if (dictSourceFiles[5] > 0) multi = ns.getBitNodeMultipliers().CorporationValuation;
 
-    if (!ns.corporation.hasUnlockUpgrade("Warehouse API") && ns.corporation.getUnlockUpgradeCost("Warehouse API") > corp.funds) {
-        throw new Error("FAILED: Insufficient funds for Warehouse API, required")
-    } else if (!ns.corporation.hasUnlockUpgrade("Warehouse API") && ns.corporation.getUnlockUpgradeCost("Warehouse API") < corp.funds) {
-        ns.corporation.unlockUpgrade("Warehouse API");
-    }
-
-
-    // DO THE THINGS IN ORDER /////////////
-
-    if (!player.hasCorporation) startCorp(ns, rootname);
-
-    getNoffer(ns); //get initial funding offer
-
-    for (let upgrade of preferredUpgradeOrder) {    // Check for and purchase initial upgrades
-        let hasUpgrade = ns.corporation.hasUnlockUpgrade(upgrade);
-        if (!hasUpgrade) purchaseUpgrade(ns, upgrade)
-    }
-
-    buildDivisions(ns); //create division framework
-
-    for (let div of corp.divisions) {
-
-        let divExists = corp.divisions.find(d => d.type === targetDiv); //check for division
-
-        if (divExists) {
-
-            for (let cityName of cities) {
-
-                officeUpgrader(div.name, cityName, targetOfficeSize);
-
-                fillOffice(div.name, cityName);
-
-            }
-
-        }
-    }
-
+    //build a division, set up the inicial warehouse, and the selling of products
+    //purchase inicial ulockables
+    buildDivision(ns, 0);
 
     for (let div of corp.divisions) { //loop through divisions
         let divExists = corp.divisions.find(d => d.type === targetDiv); //check for the division were managing
 
         if (divExists) {
 
-            for (let cityName of cities) {
+            for (let cityName of div.cities) {
 
-                whUpgrader(div.name, cityName);
+                officeUpgrader(ns, div.name, cityName, targetOfficeSize);
+                fillOffice(ns, div.name, cityName);
+                whUpgrader(ns, div.name, cityName);
+                advertise(ns, div.name);
+                corpUpgrader(ns);
 
-                for (let material in materials) {
+
+                for (let material of materials) {
                     var amt = 0;
                     let currentstock = ns.corporation.getMaterial(div.name, cityName, materials[material]).qty
                     switch (materials[material]) {
                         case "Hardware":
                             if (currentstock < hardware_amt) amt = hardware_amt - currentstock;
-
-
                             break;
                         case "AI Cores":
                             if (currentstock < core_amt) amt = core_amt - currentstock;
@@ -468,6 +475,7 @@ export async function main(ns) {
                     ns.print(cityName);
                     ns.print(materials[material]);
                     ns.print(amt);
+
                     if (amt > 0) ns.corporation.buyMaterial(div.name, cityName, materials[material], (0.1 * amt));
                     await ns.sleep(1000)
                     ns.corporation.buyMaterial(div.name, cityName, materials[material], 0)
