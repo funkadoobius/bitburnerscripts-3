@@ -21,7 +21,7 @@ export async function main(ns) {
         ns.corporation.unlockUpgrade("Warehouse API");
     }**/
 
-    const phase = 1;// args[0];
+    const phase = 1; // args[0];
     const rootname = "FUBAR";
     const targetDiv = "Agriculture";
 
@@ -459,7 +459,7 @@ export async function main(ns) {
 
 
     /* Get smart supply
-    */
+     */
     ns.print("Checking for unlockable upgrades ...");
     for (let unlock of preferredUpgradeOrder) { // purchase corp unlocks based on the list, like smart supply
         if (!ns.corporation.hasUnlockUpgrade(unlock)) {
@@ -494,7 +494,7 @@ export async function main(ns) {
             // check for a warehouse and if its affordable
             if (!ns.corporation.hasWarehouse(division.name, cityName)) {
                 if (ns.corporation.getPurchaseWarehouseCost() < corp.funds) {
-                    ns.corporation.purchaseWarehouse(division.name, cityName);//make a warehouse 
+                    ns.corporation.purchaseWarehouse(division.name, cityName); //make a warehouse 
                     ns.print("warehouse created in ", cityName);
                 } else ns.print(`FAILED: Insufficient funds to Purchase Warehouse in ${cityName}`);
             } else ns.print(`FAILED: Warehouse already exists in ${cityName}`);

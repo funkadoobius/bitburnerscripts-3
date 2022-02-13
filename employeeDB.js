@@ -2,13 +2,30 @@
  * 
  @param {NS} ns */
 
-export async function main(ns) {
+ export async function main(ns) {
+	const corp = eval(ns.corporation);
 
-let employeeDB = [];
-let employee = [{name: "",cha:0 ,cre:0 ,eff:0 ,ene:0 , exp:0 , hap:0 , int:0 , loc: "", mor:0 , pos: "", sal:0 } ];
-
-
-
+	let div = "Agriculture";
+	let division = corp.getDivision(div);
 
 
+
+	let employeeDB = [];
+
+
+
+	for (cityName of division.cities) {
+
+		let office = corp.getOffice(division.name, cityName);
+		
+		office.employees.forEach(name => {
+			let tempEmployee = corp.getEmployee(div, cityName, name);
+			employeeDB.push(tempEmployee);
+		});
+
+
+
+	}
+
+	ns.print(employeeDB);
 }
