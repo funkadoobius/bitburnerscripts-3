@@ -239,17 +239,18 @@ export async function main(ns) {
             // ns.print(d.name, " - ", div, " added to array.");
         });
 
-        if (existingDivisions.length == 0 && ns.corporation.getExpandIndustryCost(div) < corp.funds) {
-            //ns.print("ns.corporation.getExpandIndustryCost(div) - ", ns.corporation.getExpandIndustryCost(div));
+        if (!existingDivisions.includes(div)) {
+            if (ns.corporation.getExpandIndustryCost(div) < corp.funds) {
+                //ns.print("ns.corporation.getExpandIndustryCost(div) - ", ns.corporation.getExpandIndustryCost(div));
 
-            ns.print("Expanding Industry...");
-            ns.corporation.expandIndustry(div, div);
-            ns.print("SUCCESS");
+                ns.print("Creating Industry...");
+                ns.corporation.expandIndustry(div, div);
+                ns.print("SUCCESS");
 
-        } else ns.print("FAILED: could not create new division. - ", div);
+            } else ns.print("FAILED: insufficient funds to create industry. - ", div);
 
 
-
+        } else ns.print("FAILED: Division already exists.");
 
 
     }
@@ -330,7 +331,9 @@ export async function main(ns) {
 
         let thisOffice = ns.corporation.getOffice(divname, cityName);
         let i = thisOffice.employees.length;
+        ns.print(i);
         let newhires = thisOffice.size - thisOffice.employees.length;
+        ns.print(newhires);
 
         while (i < thisOffice.size) {
             ns.print("#employees: ", thisOffice.employees.length, " - office size: ", thisOffice.size)
@@ -460,16 +463,19 @@ export async function main(ns) {
     let corp = ns.corporation.getCorporation(); // corp stats
     let div = preferredIndustryOrder[0]; //this can become an iterator for a list of configured divisions
 
-    createIndustry(ns, div); // create the first industry
+    await createIndustry(ns, div); // create the first industry
 
     let division = ns.corporation.getDivision(div); // load div info 
 
 
     /* Get smart supply
     */
-
+    ns.print("Checking for unlockable upgrades ...");
     for (let unlock of preferredUpgradeOrder) { // purchase corp unlocks based on the list, like smart supply
-        if (!ns.corporation.hasUnlockUpgrade(unlock)) purchaseUnlock(ns, unlock);
+        if (!ns.corporation.hasUnlockUpgrade(unlock)) {
+            purchaseUnlock(ns, unlock);
+            ns.print(unlock, " unlocked.");
+        } else ns.print(unlock, " already unlocked.");
 
     }
 
@@ -479,68 +485,78 @@ export async function main(ns) {
     */
 
     //ns.print(division.cities);
-    if (division.cities.length < cities.length) { // if the size of the array containing the cities this division is currently in is less than the total number of cites
-
+    ns.print(division.cities.length, " ", cities.length);
+    if (division.cities.length <= cities.length) { // if the size of the array containing the cities this division is currently in is less than the total number of cites
+        ns.print("Start rolling through cities ....");
         for (let cityName of cities) { // iterate through the full list of cities
 
             //if the current city is not in the list of division cities and the expansion cost is ok
-            if (!division.cities.includes(cityName) && ns.corporation.getExpandCityCost() < corp.funds) {
-
-                //expand into this city
-                ns.corporation.expandCity(division.name, cityName);
-                ns.print(division.name, " expanded into ", cityName);
-
-            } else ns.print(`FAILED: to expand ${div} into ${cityName}`);
-
+            ns.print("DEBUG BREAK 1");
+            if (!division.cities.includes(cityName)) {
+                if (ns.corporation.getExpandCityCost() < corp.funds) {
+                    ns.print("Not in ", cityName, " yet, expanding....");
+                    //expand into this city
+                    ns.corporation.expandCity(division.name, cityName);
+                    ns.print(division.name, " expanded into ", cityName);
+                } else ns.print("FAILED: insufficient funds to expand ", division.name, " to ", cityName);
+            } else ns.print(`FAILED: to expand ${div} into ${cityName}, already exists.`);
+            ns.print("DEBUG BREAK 2");
             // check for a warehouse and if its affordable
-            if (!ns.corporation.hasWarehouse(divname, cityName && ns.corporation.getPurchaseWarehouseCost() < corp.funds)) {
+            if (!ns.corporation.hasWarehouse(division.name, cityName)) {
+                if (ns.corporation.getPurchaseWarehouseCost() < corp.funds) {
+                    ns.corporation.purchaseWarehouse(division.name, cityName);//make a warehouse 
+                    ns.print("warehouse created in ", cityName);
+                } else ns.print(`FAILED: Insufficient funds to Purchase Warehouse in ${cityName}`);
+            } else ns.print(`FAILED: Warehouse already exists in ${cityName}`);
 
-                //make a warehouse 
-                ns.corporation.purchaseWarehouse(divname, cityName);
-                ns.print("warehouse created in ", cityName);
 
-            } else ns.print(`FAILED: Insufficient funds to Purchase Warehouse in ${cityName}`);
+
+            ns.print("DEBUG BREAK 3");
+
 
             // if making the warehouse was successful, purchase the first round of materials for the warehouse
-            if (ns.corporation.hasWarehouse(divname, cityName)) {
+            if (ns.corporation.hasWarehouse(division.name, cityName)) {
 
-                ns.corporation.sellMaterial(divname, cityName, "Food", "MAX", "MP+10");
+                ns.corporation.sellMaterial(division.name, cityName, "Food", "MAX", "MP+10");
                 ns.print("FOOD set to be sold in ", cityName);
-                ns.corporation.sellMaterial(divname, cityName, "Plants", "MAX", "MP+10");
+                ns.corporation.sellMaterial(division.name, cityName, "Plants", "MAX", "MP+10");
                 ns.print("Plants set to be sold in ", cityName);
 
-                var warehouse = ns.corporation.getWarehouse(divname, cityName);
+                var warehouse = ns.corporation.getWarehouse(division.name, cityName);
 
                 // if smartsupply is not enabled, enable it
                 if (!warehouse.smartSupplyEnabled) {
 
-                    ns.corporation.setSmartSupply(divname, cityName, true);
+                    ns.corporation.setSmartSupply(division.name, cityName, true);
                     ns.print("Smart Supply enabled for ", cityName);
                 }
             }
+            ns.print("DEBUG BREAK 4");
+            //hire the first round of emplyees
+            await fillOffice(ns, division.name, cityName);
+            await ns.sleep(2000);
+            //setup the initial round of advertising
+            await advertise(ns, division.name);
+            await ns.sleep(2000);
+            // corporation levelable upgrades
+            await corpUpgrader(ns);
+            await ns.sleep(2000);
+            // upgrade warehouse
+            await whUpgrader(ns, division.name, cityName);
+            await ns.sleep(2000);
+            // purchase the first round of materials to stock our upgraded warehouse
+            await purchaseMaterials(ns, division.name, cityName);
+            await ns.sleep(2000);
         }
 
-        //hire the first round of emplyees
-        fillOffice(ns, division.name, cityName);
 
-        //setup the initial round of advertising
-        advertise(ns, division.name);
-
-        // corporation levelable upgrades
-        corpUpgrader(ns);
-
-        // upgrade warehouse
-        whUpgrader(ns, division.name, cityName);
-
-        // purchase the first round of materials to stock our upgraded warehouse
-        purchaseMaterials(ns, division.name, cityName);
     }
 
 
     corp = ns.corporation.getCorporation(); // corp stats
     /* FIRST MONITORING HOLD
             WAIT HERE until profits are greater than 1.5M/s
-    
+     
     */
     while ((corp.revenue - corp.expenses) < 1.5e6) {
         ns.print("Waiting on profit threshold ... ");
@@ -649,4 +665,4 @@ export async function main(ns) {
             await ns.corporation.assignJob("Agriculture", city, office.employees[1], "Engineer");
             await ns.corporation.assignJob("Agriculture", city, office.employees[2], "Business");
         }*/
-};
+}
