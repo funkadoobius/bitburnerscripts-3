@@ -1,33 +1,34 @@
 
 
-create corp
+XXXXX  create corp
 
-create division
+XXXXX  create division
 
-    get / co smart supply
+XXXXX    get / co smart supply
 
-    expand division to all cities
-        hire workers
+ XXXXX   expand division to all cities
+  XXXXX          create warehouse    
+   XXXXX     set product sales level
 
-    buy ads
+  XXXXX  hire workers
 
-    upgrade storage
+ XXXXX   buy ads
+XXXXX   purchase upgrade levels
+XXXXX    upgrade storage
+   
+XXXXX purchase materials
 
-    set product sales level
 
 
-purchase upgrade levels
-
-purchase materials
-
-    Monitor income 1.5m/s
+ XXXXX   Monitor income 1.5m/s
     ** Monitor employee morale     
             Avg Employee Morale: 100.000
             Avg Employee Happiness: 99.998 (or higher)
             Avg Employee Energy: 99.998 (or higher)
 
+phase 2 --=======----
 
-get first offer 110b
+XXXXX get first offer 110b
 
 
 upgrade office
