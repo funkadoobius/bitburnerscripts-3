@@ -46,3 +46,122 @@ get next investment offer 5t
 upgrade warehouse   
     buy materials
     
+
+
+User avatar
+level 1
+Pornhubschrauber
+Op ·
+2 yr. ago
+· edited 2 yr. ago
+
+Stats and jobs
+
+These are still highly preliminary, but I found the following relations:
+
+    INT benefits most jobs, except management. It's extremely important for R&D and engineers, and still important for ops and business.
+
+    Creativity, the other stat which doesn't seem to change (except via augmentation upgrades from the main page), is very important for R&D and still important for Ops. Eng/Biz/Man don't seem to benefit from it, but esp. with Man, I'm not sure.
+    By_Another_Name confirms that there's a minor effect on Managers. Thanks!
+
+    Charisma is "people skills" and as such very important for Man/Biz, and (almost) useless for the rest.
+
+    Efficiency sounds like a good stat in every job, but doesn't seem to affect biz. Its effect seems to be the strongest in jobs close to production, like Ops and Eng.
+
+    Exp sounds like another great stat, but again, Biz doesn't get a lot out of it. Still not entirely useless. Engineers receive a huge boost, and the other jobs are somewhere between those extremes.
+
+Sorted by job:
+
+    Ops: EFF, EXP, INT, CRE, in roughly that order.
+
+    Eng: EXP (huge effect), INT, EFF.
+
+    Biz: CHA, INT, EXP.
+
+    Man: CHA (huge effect), EXP, EFF.
+
+    R&D: INT, CRE, EXP, EFF.
+
+Morale, happiness, and energy seem to be productivity multipliers for all jobs, with about equal effects.
+Finally, "unassigned" seems to be no different from training. The only difference is that an employee in "training" is sort of earmarked and less likely to be put in a job slot accidentally. No need to assign the employees as fast as possible.
+
+/u/chapt3r I hope I got this stuff right. It's hell and a half to figure this out, even more so since most stats keep changing while I'm trying to compare their effects.
+
+Speed
+
+To get running ASAP, I'd suggest software and hiring one Ops, Eng, and Man. Get this site running, then, repeat the same at the other sites, and you have a production multiplier of 6. You need 5 levels of Advert Inc. too, to sell all your stuff.
+Then, don't hire more staff, but buy another warehouse and booster stuff (hardware, a few robots). Don't buy too much - you don't want to clog the warehouses, but don't let all that capacity go to waste either. Upgrades of your employees are still too expensive; it's better to buy another warehouse and more stuff, and to keep their energy and happiness >95%. Staying at office level 1 saves both salaries and the expensive office purchases.
+In long bitnodes, you want to work towards 600B for real estate, which makes some "real" money, and the Export upgrade. Unfortunately, most BNs end before you get there.
+2
+User avatar
+level 2
+By_Another_Name
+·
+2 yr. ago
+
+Here's the relevant multipliers for all positions:
+
+Operations:
+
+0.6 * Intelligence
+
+0.1 * Charisma
+
+1.0 * Experience
+
+0.5 * Creativity
+
+1.0 * Efficiency
+
+Engineer:
+
+1.0 * Intelligence
+
+0.1 * Charisma
+
+1.5 * Experience
+
+0.0 * Creativity
+
+1.0 * Efficiency
+
+Business:
+
+0.4 * Intelligence
+
+1.0 * Charisma
+
+0.5 * Experience
+
+0.0 * Creativity
+
+0.0 * Efficiency
+
+Management:
+
+0.0 * Intelligence
+
+2.0 * Charisma
+
+1.0 * Experience
+
+0.2 * Creativity
+
+0.7 * Efficiency
+
+RandD:
+
+1.5 * Intelligence
+
+0.0 * Charisma
+
+0.8 * Experience
+
+1.0 * Creativity
+
+0.5 * Efficiency
+
+This is transcribed from https://github.com/danielyxie/bitburner/blob/master/src/Corporation/Corporation.jsx
+
+Just search for Employee.prototype.calculateProductivity
+3
