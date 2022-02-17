@@ -28,32 +28,50 @@ export async function main(ns) {
         "Training": 0
     };
 
-    let jobs = [
-        { name: "Research & Development", target: 2, primeStat: "int" },
-        { name: "Business", target: 2, primeStat: "cha" },
-        { name: "Engineer", target: 4, primeStat: "exp" },
-        { name: "Management", target: 2, primeStat: "cha" }, //management has cha priority in ordering
-        { name: "Operations", target: 5, primeStat: "eff" },
-        { name: "Training", target: 0, primeStat: "" }
+    let jobs = [{
+        name: "Research & Development",
+        target: 2,
+        primeStat: "int"
+    },
+    {
+        name: "Business",
+        target: 2,
+        primeStat: "cha"
+    },
+    {
+        name: "Engineer",
+        target: 4,
+        primeStat: "exp"
+    },
+    {
+        name: "Management",
+        target: 2,
+        primeStat: "cha"
+    }, //management has cha priority in ordering
+    {
+        name: "Operations",
+        target: 5,
+        primeStat: "eff"
+    },
+    {
+        name: "Training",
+        target: 0,
+        primeStat: ""
+    }
     ];
 
 
 
     office.employees.forEach(name => {
         let tempEmployee = corp.getEmployee(div, city, name);
-
-        // add additional fields that we will need later
-        //tempEmployee.highestStat = "";
-
         employeeDB.push(tempEmployee);
     });
 
     for (let job of jobs) {
-
         let employeeTransfers = employeeDB.sort(dynamicSort(job.primeStat)).slice(0, -(employeeDB.length - job.target));
         /*
         //debugging prints
-                ns.print(``);
+                ns.print(`=======================================`);
                 ns.print(`${job.name}`);
                 ns.print(`------------`);
                 ns.print(`primeStat: ${job.primeStat}`);
@@ -61,11 +79,20 @@ export async function main(ns) {
                 ns.print(`TOTAL TRANSFERS: ${employeeTransfers.length}`);
                 ns.print(employeeTransfers);
         */
-        employeeTransfers.forEach(e => {
 
-            ns.print(`Name: ${e.name} - ${job.primeStat} = ${e[job.primeStat]}`);
 
-        });
+        for (let emp of employeeTransfers) {
+            ns.print(`Name: ${emp.name} - ${job.primeStat} = ${emp[job.primeStat]}`);
+
+if (emp)
+
+
+
+
+
+            await ns.sleep(2000);
+
+        }
     }
     /*
         let tempStats = [
@@ -90,6 +117,7 @@ export async function main(ns) {
         ns.print(DBmeta);
     }
 }
+
 function dynamicSort(property) {
     /*
     Credit to Ege Özcan in a post on stackoverflow
