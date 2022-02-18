@@ -58,7 +58,7 @@ export async function main(ns) {
         target: 0,
         primeStat: ""
     }
-    ];
+    ]
 
     // load all of the eployee objects into an array
     ns.print(`Accessing Employee Data....`);
@@ -91,7 +91,7 @@ export async function main(ns) {
                 if (ns.corporation.assignJob(div, city, employee.name, job.name)) {
                     ns.print(`SUCCESS, ${counter} of ${job.target}`);
                     employeeDB[employee.pos] = job.name;
-                    
+
                     counter++;
                     await ns.sleep(1010);
                 }
