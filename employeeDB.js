@@ -15,8 +15,8 @@ export async function main(ns) {
     let division = corp.getDivision(div);
     let office = corp.getOffice(division.name, city);
     //let jobs = ["Operations", "Engineer", "Business", "Management", "Research & Development", "Training"];
-    let officeSize = office.size;
-    let numberHired = office.employees.length;
+
+
     let employeeDB = [];
     let DBmeta = {
         "Total": 0,
@@ -60,15 +60,46 @@ export async function main(ns) {
     }
     ];
 
-
-
+    // load all of the eployee objects into an array
+    ns.print(`Accessing Employee Data....`);
     office.employees.forEach(name => {
         let tempEmployee = corp.getEmployee(div, city, name);
         employeeDB.push(tempEmployee);
     });
+    ns.print(`Employee Database complete....`);
 
+    // compile some useful meta
+    for (let employee of employeeDB) {
+        DBmeta.Total += 1;
+        DBmeta[employee.pos] += 1; //position counter
+
+        //ns.print(DBmeta);
+    }
+    ns.print(`DBmetaData compiled....`);
+    // look for the best cadidates for each job
     for (let job of jobs) {
-        let employeeTransfers = employeeDB.sort(dynamicSort(job.primeStat)).slice(0, -(employeeDB.length - job.target));
+        let employeeTemp = employeeDB.sort(dynamicSort(job.primeStat)) //.slice(0, -(employeeDB.length - job.target));
+        let counter = DBmeta[job.name];
+        if (counter >= job.target) {
+            ns.print(`${job.name} employees already hired (${DBmeta[job.name]} of ${job.target})....`);
+            continue;
+        };
+        for (let employee of employeeTemp) {
+            //ns.print(`${employee.pos}`)
+            if (employee.pos == "Unassigned" && counter < job.target) {
+                ns.print(`Assigning Name: ${employee.name} - ${job.primeStat} = ${employee[job.primeStat]} to ${job.name}`);
+                if (ns.corporation.assignJob(div, city, employee.name, job.name)) {
+                    ns.print(`SUCCESS, ${counter} of ${job.target}`);
+                    employeeDB[employee.pos] = job.name;
+                    
+                    counter++;
+                    await ns.sleep(1010);
+                }
+
+            }
+
+        };
+
         /*
         //debugging prints
                 ns.print(`=======================================`);
@@ -81,41 +112,28 @@ export async function main(ns) {
         */
 
 
-        for (let emp of employeeTransfers) {
-            ns.print(`Name: ${emp.name} - ${job.primeStat} = ${emp[job.primeStat]}`);
 
-if (emp)
-
-
-
-
-
-            await ns.sleep(2000);
-
-        }
     }
+
+
     /*
-        let tempStats = [
-            ["int", tempEmployee.int],
-            ["cha", tempEmployee.cha],
-            ["exp", tempEmployee.exp],
-            ["cre", tempEmployee.cre],
-            ["eff", tempEmployee.eff]
-        ];
-    
-    tempStats.sort((a, b) => b[1] - a[1]);
+            let tempStats = [
+                ["int", tempEmployee.int],
+                ["cha", tempEmployee.cha],
+                ["exp", tempEmployee.exp],
+                ["cre", tempEmployee.cre],
+                ["eff", tempEmployee.eff]
+            ];
+        
+        tempStats.sort((a, b) => b[1] - a[1]);
 
-    switch(tempStats[0])
-    ns.print(tempStats);
+        switch(tempStats[0])
+        ns.print(tempStats);
 
 
-    ns.print(employeeDB);
-*/
-    for (let employee of employeeDB) {
-        DBmeta.Total += 1;
-        DBmeta[employee.pos] += 1; //position counter
-        ns.print(DBmeta);
-    }
+        ns.print(employeeDB);
+    */
+
 }
 
 function dynamicSort(property) {

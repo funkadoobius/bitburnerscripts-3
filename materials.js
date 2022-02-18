@@ -3,8 +3,14 @@
 const cities = ["Aevum", "Chongqing", "Sector-12", "New Tokyo", "Ishima", "Volhaven"];
 const upgrades = ["FocusWires", "Neural Accelerators", "Speech Processor Implants",
 	"Nuoptimal Nootropic Injector Implants", "Smart Factories"];
-
-let corp = ns.corporation.getCorporation(); //refresh corp stats
+const jobs = [        "Total",
+"Research & Development",
+"Business",
+"Engineer",
+"Management",
+"Operations",
+"Training"
+];let corp = ns.corporation.getCorporation(); //refresh corp stats
 
 const phase = 1;
 const materials = [];
@@ -23,6 +29,38 @@ switch (phase) {
 			["Robots", 0],
 		];
 		break;
+
+	case 2:
+		materials = [
+			["Hardware", 2800],
+			["AI Cores", 2520],
+			["Real Estate", 146400],
+			["Robots", 96],
+		];
+		break;
+
+	case 3:
+		materials = [
+			["Hardware", 2800],
+			["AI Cores", 2520],
+			["Real Estate", 146400],
+			["Robots", 96],
+		];
+
+	default:
+		break;
+
+}
+
+
+
+	 
+		materials = [
+			{"1" : {"Hardware": 2800, "AI Cores": 2520, "Real Estate": 146400, "Robots": 0}}
+		
+		
+		];
+	
 
 	case 2:
 		materials = [
