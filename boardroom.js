@@ -31,16 +31,11 @@ export async function main(ns) {
     const corp = eval("ns.corporation");
 
 
-    var jobs = [];
-    var materials = [];
-    var corpUpgrades = [];
-    var corpUnlockables = [];
+
     var divUpgrades = [];
     var advertTarget = 0;
     //let dictSourceFiles = await getActiveSourceFiles(ns);
 
-    var targetOfficeSize = 0;
-    var targetWHSize = 0;
 
     const preferredUpgradeOrder = [
         "Smart Supply",
@@ -58,7 +53,7 @@ export async function main(ns) {
             "targetOfficeSize": 3,
             "targetWHSize": 300,
             "advertTarget": 2,
-            "jobs": { "Research & Development": 0, "Business": 1, "Engineer": 1, "Management": 0, "Operations": 1, "Training": 0 },
+            "jobs": [["Research & Development", 0], ["Business", 1], ["Engineer", 1], ["Management", 0], ["Operations", 1], ["Training", 0]],
             "materials": { "Hardware": 125, "AI Cores": 75, "Real Estate": 27000, "Robots": 0 },
             "corpUpgrades": {
                 "FocusWires": 2, "Neural Accelerators": 2, "Speech Processor Implants": 2, "Nuoptimal Nootropic Injector Implants": 2,
@@ -92,7 +87,12 @@ export async function main(ns) {
         }
     }
 
-
+    let targetOfficeSize = testDB[phase].targetOfficeSize;
+    let jobs = testDB[phase].jobs;
+    let materials = testDB[phase].materials;
+    let corpUpgrades = testDB[phase].corpUpgrades;
+    let corpUnlockables = testDB[phase].corpUnlockables;
+    let targetWHSize = testDB[phase].targetWHSize;
 
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -254,12 +254,13 @@ export async function main(ns) {
             i++;
         }
 
-        jobs.forEach(job => {
+        for (let job of jobs) {
             ns.print(cityName, " ", job[0], " ", job[1]);
             corp.setAutoJobAssignment(divname, cityName, job[0], job[1]);
 
-            //await ns.sleep(1000);
-        });
+            await ns.sleep(1000);
+        }
+
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -331,6 +332,75 @@ export async function main(ns) {
             ns.sleep(1000)
             corp.buyMaterial(div, cityName, material[0], 0)
         });
+
+    }
+    async function hrDept(ns, div, cityName) {
+        let division = corp.getDivision(div)
+        let office = corp.getOffice(division.name, cityName);
+        //let jobs = ["Operations", "Engineer", "Business", "Management", "Research & Development", "Training"];
+
+
+        let employeeDB = [];
+        let DBmeta = {
+            "Total": 0,
+            "Research & Development": 0,
+            "Business": 0,
+            "Engineer": 0,
+            "Management": 0,
+            "Operations": 0,
+            "Training": 0
+        };
+
+        let jobStats = [
+            { name: "Research & Development", target: 2, primeStat: "int" },
+            { name: "Business", target: 2, primeStat: "cha" },
+            { name: "Engineer", target: 4, primeStat: "exp" },
+            { name: "Management", target: 2, primeStat: "cha" }, //management has cha priority in ordering
+            { name: "Operations", target: 5, primeStat: "eff" },
+            { name: "Training", target: 0, primeStat: "" }
+        ]
+
+        // load all of the eployee objects into an array
+        ns.print(`Accessing Employee Data....`);
+        office.employees.forEach(name => {
+            let tempEmployee = corp.getEmployee(div, cityName, name);
+            employeeDB.push(tempEmployee);
+        });
+        ns.print(`Employee Database complete....`);
+
+        // compile some useful meta
+        for (let employee of employeeDB) {
+            DBmeta.Total += 1;
+            DBmeta[employee.pos] += 1; //position counter
+
+            //ns.print(DBmeta);
+        }
+        ns.print(`DBmetaData compiled....`);
+        // look for the best cadidates for each job
+        for (let job of jobStats) {
+            let employeeTemp = employeeDB.sort(dynamicSort(job.primeStat)) //.slice(0, -(employeeDB.length - job.target));
+            let counter = DBmeta[job.name];
+            if (counter >= job.target) {
+                ns.print(`${job.name} employees already hired (${DBmeta[job.name]} of ${job.target})....`);
+                continue;
+            };
+            for (let employee of employeeTemp) {
+                //ns.print(`${employee.pos}`)
+                if (employee.pos == "Unassigned" && counter < job.target) {
+                    ns.print(`Assigning Name: ${employee.name} - ${job.primeStat} = ${employee[job.primeStat]} to ${job.name}`);
+                    if (await ns.corporation.assignJob(div, cityName, employee.name, job.name)) {
+                        ns.print(`SUCCESS, ${counter} of ${job.target}`);
+                        employeeDB[employee.pos] = job.name;
+
+                        counter++;
+                        await ns.sleep(1010);
+                    }
+
+                }
+
+            };
+
+        }
 
     }
 
@@ -445,6 +515,7 @@ export async function main(ns) {
             ns.print("DEBUG BREAK 4");
             //hire the first round of emplyees
             await fillOffice(ns, division.name, cityName);
+            await hrDept(ns, division.name, cityName)
             await ns.sleep(2000);
             //setup the initial round of advertising
             await advertise(ns, division.name);
