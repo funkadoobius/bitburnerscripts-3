@@ -56,8 +56,8 @@ switch (phase) {
 
 	 
 		materials = [
-			{"1" : {"Hardware": 2800, "AI Cores": 2520, "Real Estate": 146400, "Robots": 0}}
-		
+			{"1" : {"Hardware": 2800, "AI Cores": 2520, "Real Estate": 146400, "Robots": 0}},
+			{"2" : {"Hardware": 2800, "AI Cores": 2520, "Real Estate": 146400, "Robots": 96},
 		
 		];
 	
