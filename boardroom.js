@@ -8,6 +8,14 @@ and materials to put in the warehouse. this would replace switched 3d arrays.
 
 */
 
+const argsSchema = [
+    ['phase', 1], // Do nothing but hack, no prepping (drains servers to 0 money, if you want to do that for some reason)
+    ['div', "Agriculture"]
+];
+export function autocomplete(data, args) {
+    data.flags(argsSchema);
+    return [];
+}
 export async function main(ns) {
 
     //let player = ns.getPlayer();
@@ -21,35 +29,26 @@ export async function main(ns) {
         corp.unlockUpgrade("Warehouse API");
     }**/
 
-    const phase = 1; // args[0];
+
+    let args = ns.flags(argsSchema);
+    const phase = args[`phase`]; // args[0];
+    const div = args[`div`];
     const rootname = "FUBAR";
-    const targetDiv = "Agriculture";
+
 
     //let corp1 = corp.getcorp(); //refresh corp1 stats
     const cities = ["Aevum", "Chongqing", "Sector-12", "New Tokyo", "Ishima", "Volhaven"];
 
     const corp = eval("ns.corporation");
-
-
-
-    var divUpgrades = [];
-    var advertTarget = 0;
-    //let dictSourceFiles = await getActiveSourceFiles(ns);
-
-
-    const preferredUpgradeOrder = [
-        "Smart Supply",
+    let divisionInfo = [
+        { name: "Agriculture", phase: 0, products: ["Food", "Plants"], prodMultipliers: ["Real Estate", "AI Cores", "Hardware", "Robots"] },
+        { name: "Tobacco", phase: 0, products: ["Butts1", "Butts2", "Butts3"], prodMultipliers: ["Real Estate", "AI Cores", "Hardware", "Robots"] }
     ];
-
-    const preferredIndustryOrder = [
-        "Agriculture",
-        "Software",
-        "Tobacco"
-    ]
-
     const testDB =
     {
         "1": {
+
+            "incomeThreshold": 1.5e6,
             "targetOfficeSize": 3,
             "targetWHSize": 300,
             "advertTarget": 2,
@@ -61,6 +60,8 @@ export async function main(ns) {
         },
 
         "2": {
+
+            "incomeThreshold": 1.5e7,
             "targetOfficeSize": 9,
             "targetWHSize": 2000,
             "advertTarget": 3,
@@ -71,22 +72,24 @@ export async function main(ns) {
             "corpUnlockables": ["Smart Supply"]
         },
         "3": {
+
+            "incomeThreshold": 5e7,
             "targetOfficeSize": 18,
             "targetWHSize": 3800,
             "advertTarget": 4,
             "jobs": [["Research & Development", 2], ["Business", 2], ["Engineer", 6], ["Management", 2], ["Operations", 6], ["Training", 0]],
             "materials": [["Hardware", 9300], ["AI Cores", 6270], ["Real Estate", 230400], ["Robots", 726]],
-            "corpUpgrades": [["FocusWires", 2], ["Neural Accelerators", 2], ["Speech Processor Implants", 2], ["Nuoptimal Nootropic Injector Implants", 2],
+            "corpUpgrades": [["FocusWires", 4], ["Neural Accelerators", 4], ["Speech Processor Implants", 4], ["Nuoptimal Nootropic Injector Implants", 4],
             ["Smart Storage", 10], ["Smart Factories", 10], ["Wilson Analytics", 0], ["Project Insight", 0], ["DreamSense", 0], ["ABC SalesBots", 0]],
             "corpUnlockables": ["Smart Supply"]
         },
     }
-
+    let advertTarget = testDB[phase].advertTarget;
     let targetOfficeSize = testDB[phase].targetOfficeSize;
-    var jobs = testDB[phase].jobs;
-    var materials = testDB[phase].materials;
-    var corpUpgrades = testDB[phase].corpUpgrades;
-    var corpUnlockables = testDB[phase].corpUnlockables;
+    let jobs = testDB[phase].jobs;
+    let materials = testDB[phase].materials;
+    let corpUpgrades = testDB[phase].corpUpgrades;
+    let corpUnlockables = testDB[phase].corpUnlockables;
     let targetWHSize = testDB[phase].targetWHSize;
 
 
@@ -133,10 +136,7 @@ export async function main(ns) {
 
     function createIndustry(ns, div) {
 
-        //ns.print("Inside createIndustry(ns, ", div, ")");
         let corp1 = corp.getCorporation(); //refresh corp1 stats
-        //ns.print("refreshed corp1. stats");
-        //ns.print("corp1.divisions.find(d => d === div) - ", corp1.divisions.find(d => d === "Agriculture"));
 
         var existingDivisions = [];
 
@@ -210,7 +210,7 @@ export async function main(ns) {
                 ns.print(`Levels available, upgrading...`);
                 while (i < upgrade[1]) {
                     ns.print(`Upgrading ${upgrade[0]} to level ${i} of ${upgrade[1]}`);
-                    corp.levelUpgrade(upgrade[0]);
+                    await corp.levelUpgrade(upgrade[0]);
                     ns.print(`SUCCESS: ${upgrade[0]} level increased.`)
                     i++;
                     await ns.sleep(201);
@@ -257,7 +257,7 @@ export async function main(ns) {
         while (i < thisOffice.size) {
 
             await corp.hireEmployee(divname, cityName);
-            ns.print("SUCCESS: hired employee in ", cityName, ", ", (newhires - i), " left to go.");
+            ns.print("SUCCESS: hired employee in ", cityName, ", ", (i - newhires), " left to go.");
             await ns.sleep(1011);
             i++;
 
@@ -333,11 +333,11 @@ export async function main(ns) {
             if (currentstock < material[1]) {
 
                 amt = material[1] - currentstock;
-                ns.print(`Not enough ${material[0]}, purchasing ${(amt)}/sec for 1 second.`);
+                ns.print(`Not enough ${material[0]}, purchasing ${(amt)}/sec until we have ${material[1]}.`);
 
                 if (amt > 0) {
                     while (currentstock < material[1]) {
-                        await corp.buyMaterial(div, cityName, material[0], (0.05 * amt));
+                        await corp.buyMaterial(div, cityName, material[0], (0.1 * amt));
                         await ns.sleep(1000)
                         currentstock = corp.getMaterial(div, cityName, material[0]).qty
                     }
@@ -345,18 +345,22 @@ export async function main(ns) {
                 }
             }
 
-            //ns.print(div.name)
-            //ns.print(cityName);
-            //ns.print(material[0]);
-            //ns.print(amt);
-
-
-
 
         };
 
     }
 
+    ///////////////////////////////////////////////////////////////////////////////////////////
+    /*
+        async function productMaker(ns, div, cityName) {
+            let currentDiv = divisionInfo.filter(d => { d.name ==div });
+                    
+            for (let productName of currentDiv.products){
+                
+            corp.makeProduct(divisionName, cityName, productName, 1e9, 1e9);
+            }
+        }
+    */
     ///////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -394,7 +398,7 @@ export async function main(ns) {
             employeeDB.push(tempEmployee);
         });
         ns.print(`Employee Database complete....`);
-
+        ns.print(employeeDB);
         // compile some useful meta
         for (let employee of employeeDB) {
             DBmeta.Total += 1;
@@ -522,7 +526,7 @@ export async function main(ns) {
      */
 
     let corp1 = corp.getCorporation(); // corp1 stats
-    let div = preferredIndustryOrder[0]; //this can become an iterator for a list of configured divisions
+
 
     await createIndustry(ns, div); // create the first industry
 
@@ -532,7 +536,7 @@ export async function main(ns) {
     /* Get smart supply
      */
     ns.print("Checking for unlockable upgrades ...");
-    for (let unlock of preferredUpgradeOrder) { // purchase corp1 unlocks based on the list, like smart supply
+    for (let unlock of corpUnlockables) { // purchase corp1 unlocks based on the list, like smart supply
         if (!corp.hasUnlockUpgrade(unlock)) {
             purchaseUnlock(ns, unlock);
             ns.print(unlock, " unlocked.");
@@ -552,7 +556,7 @@ export async function main(ns) {
         for (let cityName of cities) { // iterate through the full list of cities
 
             //if the current city is not in the list of division cities and the expansion cost is ok
-            ns.print("DEBUG BREAK 1");
+
             if (!division.cities.includes(cityName)) {
                 if (corp.getExpandCityCost() < corp1.funds) {
                     ns.print("Not in ", cityName, " yet, expanding....");
@@ -561,7 +565,7 @@ export async function main(ns) {
                     ns.print(division.name, " expanded into ", cityName);
                 } else ns.print("FAILED: insufficient funds to expand ", division.name, " to ", cityName);
             } else ns.print(`SUCCESS: in ${cityName}, ${div} already exists.`);
-            ns.print("DEBUG BREAK 2");
+
             // check for a warehouse and if its affordable
             if (!corp.hasWarehouse(division.name, cityName)) {
                 if (corp.getPurchaseWarehouseCost() < corp1.funds) {
@@ -571,16 +575,18 @@ export async function main(ns) {
             } else ns.print(`SUCCESS: Warehouse already exists in ${cityName}`);
 
 
-
-            ns.print("DEBUG BREAK 3");
-
-
             // if making the warehouse was successful, purchase the first round of materials for the warehouse
+            /* 
+             if (division.name == "Tobacco"){
+                 await productMaker(ns, division.name, cityName);
+ 
+             }*/
+
             if (corp.hasWarehouse(division.name, cityName)) {
 
-                await corp.sellMaterial(division.name, cityName, "Food", "MAX", "MP+10");
+                await corp.sellMaterial(division.name, cityName, "Food", "MAX", "MP");
                 ns.print("FOOD set to be sold in ", cityName);
-                await corp.sellMaterial(division.name, cityName, "Plants", "MAX", "MP+10");
+                await corp.sellMaterial(division.name, cityName, "Plants", "MAX", "MP");
                 ns.print("Plants set to be sold in ", cityName);
 
                 var warehouse = corp.getWarehouse(division.name, cityName);
@@ -592,7 +598,7 @@ export async function main(ns) {
                     ns.print("Smart Supply enabled for ", cityName);
                 }
             }
-            ns.print("DEBUG BREAK 4");
+
             await officeUpgrader(ns, division.name, cityName)
             await ns.sleep(1021)
             //hire the first round of emplyees
