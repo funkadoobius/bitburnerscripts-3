@@ -149,6 +149,7 @@ export async function main(ns) {
     let corpUpgrades = testDB[phase].corpUpgrades;
     let corpUnlockables = testDB[phase].corpUnlockables;
     let targetWHSize = testDB[phase].targetWHSize;
+    let upgradeScale = 1e7;
 
     async function updateBaseData(ns) {
         ns.print(`Rechecking settings...`);
@@ -315,13 +316,16 @@ export async function main(ns) {
     function advertise(ns, div) {
         updateBaseData(ns);
         ns.print(`Checking for advertising level....`)
-        if (corp.getHireAdVertCount(div) < advertTarget || corp1.funds > 1000 * (corp1.revenue - corp1.expenses)) {
+        if (corp.getHireAdVertCount(div) < advertTarget) {
 
             if (corp.getHireAdVertCost(div) < corp1.funds) {
                 corp.hireAdVert(div);
                 ns.print(`SUCCESS: advertising level increased...`)
             } else ns.print(`FAILED: Insufficient funds to hire AdVert`);
             return;
+        } else if (phase == 3 && corp1.funds > upgradeScale * (corp1.revenue - corp1.expenses)) {
+            corp.hireAdVert(div);
+
         } else ns.print(`SUCCESS: Advertising level achieved....`);
     }
 
@@ -330,23 +334,26 @@ export async function main(ns) {
 
     async function corpUpgrader(ns) {
         updateBaseData(ns);
-        ns.print(`Checking for levelable upgrade...`);
+        ns.print(`CORP-UPGRADER: Checking for levelable upgrade...`);
         for (let upgrade of corpUpgrades) {
             let i = 0;
-            if (corp.getupgradelevel(upgrade[0]) < upgrade[1] || corp1.funds > l000 * (corp1.revenue - corp1.expenses)) {
+            if (corp.getUpgradeLevel(upgrade[0]) < upgrade[1]) {
                 if (corp.getUpgradeLevelCost(upgrade[0]) <= corp1.funds) {
-                    ns.print(`Levels available, upgrading...`);
+                    //ns.print(`Levels available, upgrading...`);
                     while (i < upgrade[1]) {
-                        ns.print(`Upgrading ${upgrade[0]} to level ${i} of ${upgrade[1]}`);
+                        //ns.print(`Upgrading ${upgrade[0]} to level ${i} of ${upgrade[1]}`);
                         await corp.levelUpgrade(upgrade[0]);
                         ns.print(`SUCCESS: ${upgrade[0]} level increased.`)
                         i++;
-                        await ns.sleep(201);
+                        //await ns.sleep(201);
                     }
+                } else if (phase == 3 && corp1.funds > (corp1.revenue - corp1.expenses) * upgradeScale) {
+                    await corp.levelUpgrade(upgrade[0]);
+                    ns.print(`SUCCESS: CORP-UPGRADER: ${upgrade[0]} level increased.`)
                 } else if (corp.getUpgradeLevelCost(upgrade[0]) > corp1.funds) {
-                    ns.print(`FAILED: Insufficient funds to Upgrade ${upgrade[0]} to level ${i}`);
+                    ns.print(`FAILED: CORP-UPGRADER: Insufficient funds to Upgrade ${upgrade[0]} to level ${i}`);
                 };
-            } else ns.print(`SUCCESS: Upgrade level for ${upgrade[0]} to is greater than or equal to ${upgrade[1]}`);
+            }
         };
     };
 
@@ -356,19 +363,29 @@ export async function main(ns) {
     async function officeUpgrader(ns, divname, cityName) {
         updateBaseData(ns);
         ns.print(`Checking for office upgrades...`);
-        let newsize = testDB[phase].targetOfficeSize;
-        let thisOffice = corp.getOffice(divname, cityName);
 
-        if ((thisOffice.size < targetOfficeSize) || corp1.funds > l000 * (corp1.revenue - corp1.expenses)) {
-            if (corp.getOfficeSizeUpgradeCost(divname, cityName, (targetOfficeSize - thisOffice.size)) < corp1.funds) {
-                ns.print(`Office upgrades available....`);
-                await corp.upgradeOfficeSize(divname, cityName, (newsize - thisOffice.size));
-                ns.print(`SUCCESS: added ${(newsize - thisOffice.size)} to office in ${cityName}`);
+        let thisOffice = corp.getOffice(divname, cityName);
+        let upgradeSize = targetOfficeSize - thisOffice.size;
+        ns.print(`FAILED: upgradeSize ${upgradeSize}`)
+        if (upgradeSize > 0) {
+            ns.print(`office upgrades NEEDED`);
+            if (corp.getOfficeSizeUpgradeCost(divname, cityName, upgradeSize) < corp1.funds) {
+                //ns.print(`Office upgrades available....`);
+                await corp.upgradeOfficeSize(divname, cityName, upgradeSize);
+                ns.print(`SUCCESS: added ${upgradeSize} to office in ${cityName}`);
                 await ns.sleep(1007);
-            }
+            } else ns.print(`Insufficient Funds.`)
+
+        } else if (phase == 3 && corp1.funds > ((corp1.revenue - corp1.expenses) * upgradeScale)) {
+            //ns.print(`Office upgrades available....`);
+            await corp.upgradeOfficeSize(divname, cityName, 2);
+            ns.print(`SUCCESS: added 2 to office in ${cityName}`);
+            await ns.sleep(1007);
+
         } else if (thisOffice.size >= targetOfficeSize) {
             ns.print(`SUCCESS: Office already at desired size`)
-        } else ns.print(`FAILED: Cant afford office upgrade.`)
+
+        }
 
     }
 
@@ -422,7 +439,7 @@ export async function main(ns) {
         // ns.print(cityName, " warehouse size: ", wh_size);
         // ns.print(cityName, " warehouse target: ", targetWHSize);
 
-        var wh_size_used = corp.getWarehouse(div.name, cityName).sizeUsed; //get the amt of the wh currently used
+        var wh_size_used = corp.getWarehouse(divname, cityName).sizeUsed; //get the amt of the wh currently used
         var wh_percent_used = (wh_size_used / wh_size) * 100; // math for percentage wh utilization
 
         while (wh_size < targetWHSize || wh_percent_used > 75) { // if the wh is too small
@@ -435,7 +452,7 @@ export async function main(ns) {
                 ns.print(`Warehouse upgraded. `)
                 // reload wh stats before looping, ITERATOR
                 wh_size = corp.getWarehouse(divname, cityName).size;
-                wh_size_used = corp.getWarehouse(div.name, cityName).sizeUsed; //get the amt of the wh currently used
+                wh_size_used = corp.getWarehouse(divname, cityName).sizeUsed; //get the amt of the wh currently used
                 wh_percent_used = (wh_size_used / wh_size) * 100;
                 ns.print(`Warehouse in ${cityName} is ${wh_size} of ${targetWHSize}, ${wh_percent_used}%utilized `)
                 // await ns.sleep(1006);
@@ -451,8 +468,8 @@ export async function main(ns) {
 
         for (let material of materials) {
 
-            let wh_size = corp.getWarehouse(divname, cityName).size;
-            let wh_size_used = corp.getWarehouse(div.name, cityName).sizeUsed; //get the amt of the wh currently used
+            let wh_size = corp.getWarehouse(div, cityName).size;
+            let wh_size_used = corp.getWarehouse(div, cityName).sizeUsed; //get the amt of the wh currently used
             let wh_percent_used = (wh_size_used / wh_size) * 100;
             let currentstock = corp.getMaterial(div, cityName, material[0]).qty;
             let desiredStock = ((wh_size / 2) * material[1]);
@@ -651,11 +668,13 @@ export async function main(ns) {
 
             if (corp.hasWarehouse(division.name, cityName)) {
 
-                await corp.sellMaterial(division.name, cityName, "Food", "MAX", "MP");
-                ns.print("FOOD set to be sold in ", cityName);
-                await corp.sellMaterial(division.name, cityName, "Plants", "MAX", "MP");
-                ns.print("Plants set to be sold in ", cityName);
-
+                let prodmats = industryDB.find(d => d.name == division.name).prodMats;
+                for (let prod of prodmats) {
+                    await corp.sellMaterial(division.name, cityName, prod, "MAX", "MP");
+                    ns.print(`SUCCESS: ${prod} set to be sold in ${cityName}`);
+                    // await corp.sellMaterial(division.name, cityName, "Plants", "MAX", "MP");
+                    // ns.print("Plants set to be sold in ", cityName);
+                }
                 var warehouse = corp.getWarehouse(division.name, cityName);
 
                 // if smartsupply is not enabled, enable it
@@ -695,25 +714,13 @@ export async function main(ns) {
      
     */
     while ((corp1.revenue - corp1.expenses) < 1.5e6) {
-
-
-
-
-
-
-
-
-
-
-
-
         ns.print("Waiting on profit threshold ... ");
         await ns.sleep(10001);
         corp1 = corp.getCorporation();
     }
 
     while ((corp1.revenue - corp1.expenses) >= 1.5e6) {
-        await ns.sleep(1008);
+        await ns.sleep(10008);
         if (getNoffer(ns)) break;
 
     }
