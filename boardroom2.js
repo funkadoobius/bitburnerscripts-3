@@ -62,6 +62,19 @@ export async function main(ns) {
 
     let employeeDB = [];
 
+    let materialSizes = {
+        "Water": 0.05,
+        "Energy": 0.01,
+        "Food": 0.03,
+        "Plants": 0.05,
+        "Metal": 0.1,
+        "Hardware": 0.06,
+        "Chemicals": 0.05,
+        "Drugs": 0.02,
+        "Robots": 0.5,
+        "AICores": 0.1,
+        "RealEstate": 0.005,
+    }
 
     let jobStats = [
         { name: "Research & Development", "1": 0, "2": 0, "3": 2, primeStat: "int" },
@@ -81,7 +94,7 @@ export async function main(ns) {
             "targetWHSize": 300,
             "advertTarget": 2,
             "jobs": [["Research & Development", 0], ["Business", 1], ["Engineer", 1], ["Management", 0], ["Operations", 1], ["Training", 0]],
-            "materials": [["Hardware", 125], ["AI Cores", 75], ["Real Estate", 27000], ["Robots", 0]],
+            "materials": [["Hardware", 0], ["AI Cores", 0], ["Real Estate", 30000], ["Robots", 0]],
             "corpUpgrades": [["FocusWires", 2], ["Neural Accelerators", 2], ["Speech Processor Implants", 2], ["Nuoptimal Nootropic Injector Implants", 2],
             ["Smart Storage", 0], ["Smart Factories", 2], ["Wilson Analytics", 0], ["Project Insight", 0], ["DreamSense", 0], ["ABC SalesBots", 0]],
             "corpUnlockables": ["Smart Supply"]
@@ -161,14 +174,14 @@ export async function main(ns) {
     cant use this function until corp/divs created. 
     */
 
-    async function updateMeta(ns, cityName) {
+    async function updateMeta(ns, divname, cityName) {
 
         updateBaseData(ns);
-
+        let office = corp.getOffice(divname, cityName);
         ns.print(`Rebuilding Employee Database....`);
         employeeDB = [];
         office.employees.forEach(name => {
-            let tempEmployee = corp.getEmployee(div, cityName, name);
+            let tempEmployee = corp.getEmployee(divname, cityName, name);
             employeeDB.push(tempEmployee);
         });
 
@@ -427,7 +440,6 @@ export async function main(ns) {
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 
-
     async function purchaseMaterials(ns, div, cityName) {
         ns.print(`Getting materials...`)
 
@@ -458,6 +470,7 @@ export async function main(ns) {
 
     }
 
+
     ///////////////////////////////////////////////////////////////////////////////////////////
     /*
         async function productMaker(ns, div, cityName) {
@@ -474,13 +487,9 @@ export async function main(ns) {
 
 
     async function hrDept(ns, div, cityName) {
-        updateMeta(ns, div, cityName);
-
-        let office = corp.getOffice(division.name, cityName);
-        //let jobs = ["Operations", "Engineer", "Business", "Management", "Research & Development", "Training"];
 
 
-        // load all of the eployee objects into an array
+        // load all of the employee objects into an array
         updateMeta(ns, div, cityName);
         // look for the best cadidates for each job
         for (let job of jobStats) {
@@ -488,7 +497,7 @@ export async function main(ns) {
 
 
             //employeeMeta[job.name];
-            ns.print(`Initial count for ${job.name} is ${employeeM[job.name]}`)
+            ns.print(`Initial count for ${job.name} is ${employeeMeta[job.name]}`)
             if (employeeMeta[job.name] >= job[phase]) {
                 ns.print(`${job.name} employees already hired (${employeeMeta[job.name]} of ${job[phase]})....`);
                 continue;
@@ -548,7 +557,7 @@ export async function main(ns) {
         Create a corp. determine if you can self fund, or if youre in BN3.
     */
 
-    const player = ns.getPlayer(); // refresh player data
+    player = ns.getPlayer(); // refresh player data
     const selfFund = player.money >= 1.5e11
     let worked = false;
     if (!player.hascorp) {
@@ -577,7 +586,7 @@ export async function main(ns) {
     //buildDivision(ns, 0);
      */
 
-    corp1 = corp.getCorporation(); // corp1 stats
+    let corp1 = corp.getCorporation(); // corp1 stats
 
 
     await createIndustry(ns, div); // create the first industry
@@ -602,9 +611,9 @@ export async function main(ns) {
     */
 
     //ns.print(division.cities);
-    ns.print(`Division is in ${division.cities.length} cities, needs to be in ${cities.length}`);
+    // ns.print(`Division is in ${division.cities.length} cities, needs to be in ${cities.length}`);
     if (division.cities.length <= cities.length) { // if the size of the array containing the cities this division is currently in is less than the total number of cites
-        ns.print("Start rolling through cities ....");
+        //ns.print("Start rolling through cities ....");
         for (let cityName of cities) { // iterate through the full list of cities
 
             //if the current city is not in the list of division cities and the expansion cost is ok
