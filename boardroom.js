@@ -72,16 +72,16 @@ export async function main(ns) {
         "Chemicals": 0.05,
         "Drugs": 0.02,
         "Robots": 0.5,
-        "AICores": 0.1,
-        "RealEstate": 0.005,
+        "AI Cores": 0.1,
+        "Real Estate": 0.005,
     }
 
     let jobStats = [
-        { name: "Research & Development", "1": 0, "2": 0, "3": 2, primeStat: "int" },
-        { name: "Management", "1": 0, "2": 1, "3": 3, primeStat: "cha" },//management has cha priority in ordering
-        { name: "Business", "1": 1, "2": 2, "3": 3, primeStat: "cha" },
-        { name: "Engineer", "1": 1, "2": 3, "3": 5, primeStat: "exp" },
-        { name: "Operations", "1": 1, "2": 3, "3": 5, primeStat: "eff" },
+        { name: "Engineer", "1": 0.2, "2": 0.2, "3": 0.2, primeStat: "exp" },
+        { name: "Research & Development", "1": 0.1, "2": 0.2, "3": 0.2, primeStat: "int" },
+        { name: "Operations", "1": 0.5, "2": 0.5, "3": 0.5, primeStat: "eff" },
+        { name: "Management", "1": 0.1, "2": 0.05, "3": 0.05, primeStat: "cha" },//management has cha priority in ordering
+        { name: "Business", "1": 0.1, "2": 0.05, "3": 0.05, primeStat: "cha" },
         { name: "Training", "1": 0, "2": 0, "3": 0, primeStat: "" }
     ]
 
@@ -90,10 +90,10 @@ export async function main(ns) {
         "1": {
 
             "incomeThreshold": 1.5e6,
-            "targetOfficeSize": 3,
+            "targetOfficeSize": 10,
             "targetWHSize": 300,
             "advertTarget": 2,
-            "jobs": [["Research & Development", 0], ["Business", 1], ["Engineer", 1], ["Management", 0], ["Operations", 1], ["Training", 0]],
+            "jobs": [["Research & Development", 0.2], ["Business", 0.05], ["Engineer", 0.2], ["Management", 0.05], ["Operations", 0.5], ["Training", 0]],
             "materials": [["Hardware", .1], ["AI Cores", .2], ["Real Estate", .7], ["Robots", 0]],
             "corpUpgrades": [["FocusWires", 2], ["Neural Accelerators", 2], ["Speech Processor Implants", 2], ["Nuoptimal Nootropic Injector Implants", 2],
             ["Smart Storage", 0], ["Smart Factories", 2], ["Wilson Analytics", 0], ["Project Insight", 0], ["DreamSense", 0], ["ABC SalesBots", 0]],
@@ -103,10 +103,10 @@ export async function main(ns) {
         "2": {
 
             "incomeThreshold": 1.5e7,
-            "targetOfficeSize": 9,
+            "targetOfficeSize": 20,
             "targetWHSize": 2000,
             "advertTarget": 3,
-            "jobs": [["Research & Development", 2], ["Business", 1], ["Engineer", 2], ["Management", 1], ["Operations", 3], ["Training", 0]],
+            // "jobs": [["Research & Development", 0.2], ["Business", 0.05], ["Engineer", 0.2], ["Management", 0.05], ["Operations", 0.5], ["Training", 0]],
             "materials": [["Hardware", .1], ["AI Cores", .1], ["Real Estate", .7], ["Robots", .1]],
             "corpUpgrades": [["FocusWires", 2], ["Neural Accelerators", 2], ["Speech Processor Implants", 2], ["Nuoptimal Nootropic Injector Implants", 2],
             ["Smart Storage", 10], ["Smart Factories", 10], ["Wilson Analytics", 0], ["Project Insight", 0], ["DreamSense", 0], ["ABC SalesBots", 0]],
@@ -115,10 +115,10 @@ export async function main(ns) {
         "3": {
 
             "incomeThreshold": 5e7,
-            "targetOfficeSize": 18,
+            "targetOfficeSize": 30,
             "targetWHSize": 3800,
             "advertTarget": 4,
-            "jobs": [["Research & Development", 2], ["Business", 2], ["Engineer", 6], ["Management", 2], ["Operations", 6], ["Training", 0]],
+            //"jobs": [["Research & Development", 0.2], ["Business", 0.05], ["Engineer", 0.2], ["Management", 0.05], ["Operations", 0.5], ["Training", 0]],
             "materials": [["Hardware", .1], ["AI Cores", .1], ["Real Estate", .7], ["Robots", .1]],
             "corpUpgrades": [["FocusWires", 4], ["Neural Accelerators", 4], ["Speech Processor Implants", 4], ["Nuoptimal Nootropic Injector Implants", 4],
             ["Smart Storage", 10], ["Smart Factories", 10], ["Wilson Analytics", 0], ["Project Insight", 0], ["DreamSense", 0], ["ABC SalesBots", 0]],
@@ -144,12 +144,18 @@ export async function main(ns) {
 
     let advertTarget = testDB[phase].advertTarget;
     let targetOfficeSize = testDB[phase].targetOfficeSize;
-    let jobs = testDB[phase].jobs;
+    // let jobs = testDB[phase].jobs;
     let materials = testDB[phase].materials;
     let corpUpgrades = testDB[phase].corpUpgrades;
     let corpUnlockables = testDB[phase].corpUnlockables;
+
+    let wh_size = 0;
+    let wh_size_used = 0; //get the amt of the wh currently used
+    let wh_percent_used = 0;
     let targetWHSize = testDB[phase].targetWHSize;
     let upgradeScale = 1e7;
+
+
 
     async function updateBaseData(ns) {
         ns.print(`Rechecking settings...`);
@@ -378,7 +384,7 @@ export async function main(ns) {
 
         } else if (phase == 3 && corp1.funds > ((corp1.revenue - corp1.expenses) * upgradeScale)) {
             //ns.print(`Office upgrades available....`);
-            await corp.upgradeOfficeSize(divname, cityName, 2);
+            await corp.upgradeOfficeSize(divname, cityName, 10);
             ns.print(`SUCCESS: added 2 to office in ${cityName}`);
             await ns.sleep(1007);
 
@@ -456,7 +462,9 @@ export async function main(ns) {
                 wh_percent_used = (wh_size_used / wh_size) * 100;
                 ns.print(`Warehouse in ${cityName} is ${wh_size} of ${targetWHSize}, ${wh_percent_used}%utilized `)
                 // await ns.sleep(1006);
-            }
+            } else break;
+
+            await ns.sleep(1015);
         }
     }
 
@@ -468,11 +476,11 @@ export async function main(ns) {
 
         for (let material of materials) {
 
-            let wh_size = corp.getWarehouse(div, cityName).size;
-            let wh_size_used = corp.getWarehouse(div, cityName).sizeUsed; //get the amt of the wh currently used
-            let wh_percent_used = (wh_size_used / wh_size) * 100;
+            wh_size = corp.getWarehouse(div, cityName).size;
+            wh_size_used = corp.getWarehouse(div, cityName).sizeUsed; //get the amt of the wh currently used
+            wh_percent_used = (wh_size_used / wh_size) * 100;
             let currentstock = corp.getMaterial(div, cityName, material[0]).qty;
-            let desiredStock = ((wh_size / 2) * material[1]);
+            let desiredStock = Math.round(((wh_size / 2) * material[1]) / materialSizes[material[0]]);
             let amt = desiredStock - currentstock;
 
             ns.print(`Checking ${material[0]} in ${cityName}, has ${currentstock} of ${desiredStock}`);
@@ -485,7 +493,15 @@ export async function main(ns) {
                     currentstock = corp.getMaterial(div, cityName, material[0]).qty
                 }
                 await corp.buyMaterial(div, cityName, material[0], 0) //reset to 0 after buy cycle
+            } else if (amt < 0) {
+                while (currentstock > desiredStock) {
+                    await corp.sellMaterial(div, cityName, material[0], 0.1 * (-amt), "0");
+                    await ns.sleep(10000);
+                    await corp.sellMaterial(div, cityName, material[0], "", "");
+                    currentstock = corp.getMaterial(div, cityName, material[0]).qty
+                }
             }
+
 
 
 
@@ -515,14 +531,15 @@ export async function main(ns) {
         // load all of the employee objects into an array
         updateEmpMeta(ns, div, cityName);
         // look for the best cadidates for each job
-        for (let job of jobStats) {
+        for (let job of jobStats) { // change order of jobstats array to prioritize one job over another.
             let employeeTemp = employeeDB.sort(dynamicSort(job.primeStat))//.slice(0, -(employeeDB.length - job[phase]));
 
 
             //employeeMeta[job.name];
             ns.print(`Initial count for ${job.name} is ${employeeMeta[job.name]}`)
-            if (employeeMeta[job.name] >= job[phase]) {
-                ns.print(`${job.name} employees already hired (${employeeMeta[job.name]} of ${job[phase]})....`);
+            let jobTarget = Math.round(job[phase] * employeeMeta.Total);
+            if (employeeMeta[job.name] >= jobTarget) {
+                ns.print(`${job.name} employees already hired (${employeeMeta[job.name]} of ${jobTarget})....`);
                 continue;
             } else ns.print(`Not enough employees assigned to ${job.name}`);
 
@@ -530,11 +547,11 @@ export async function main(ns) {
 
             for (let employee of employeeTemp) {
                 //ns.print(`${employee.pos}`)
-                if (employee.pos == "Unassigned" && employeeMeta[job.name] < job[phase]) {
+                if (employee.pos == "Unassigned" && employeeMeta[job.name] < jobTarget) {
                     ns.print(`Assigning Name: ${employee.name} - ${job.primeStat} = ${employee[job.primeStat]} to ${job.name}`);
 
                     await corp.assignJob(div, cityName, employee.name, job.name)
-                    ns.print(`SUCCESS, ${employeeMeta[job.name]} of ${job[phase]}`);
+                    ns.print(`SUCCESS, ${employeeMeta[job.name]} of ${jobTarget}`);
                     employeeDB[employee.pos] = job.name;
 
                     employeeMeta[job.name] += 1;
@@ -720,106 +737,27 @@ export async function main(ns) {
     }
 
     while ((corp1.revenue - corp1.expenses) >= 1.5e6) {
-        await ns.sleep(10008);
+        await ns.sleep(100008);
+        updateBaseData(ns);
+
         if (getNoffer(ns)) break;
 
-    }
-
-
-
-    /////////////// PHASE TWO
-    /*
-        phase = 2;
-    
-        for (let div of corp1.divisions) { //loop through divisions
-            //check for the division 
-            if (corp1.divisions.find(d => d.type === targetDiv)) {
-    
-                for (let cityName of cities) { //loop through city master list
-    
-                    if (div.cities.find(d => d === cityName) && corp.hasWarehouse(div.name, cityName)) {
-                        await
-    
-    
-                            officeUpgrader(ns, div.name, cityName, targetOfficeSize);
-    
-                    }
-    
-    
-                }
+        for (let cityName of cities) {
+            if (wh_percent_used > 80) {
+                await whUpgrader(ns, division.name, cityName);
+                await ns.sleep(1004);
             }
-    
-    
+            await purchaseMaterials(ns, division.name, cityName);
+            await ns.sleep(1005);
+            await officeUpgrader(ns, division.name, cityName)
+            await ns.sleep(1021)
+            //hire the first round of emplyees
+            await fillOffice(ns, division.name, cityName);
+            await ns.sleep(1001);
+            //setup the initial round of advertising
+            await advertise(ns, division.name);
+            await ns.sleep(1002);
         }
-    */
-    ///////////////////////////////////////
-
-    /*
-    updateBaseData(ns);
-    let divisions = [];
-    for (const division of corp1.divisions) {
- 
-        let name = division.name
-        divisions.push(name);
-        ns.print(name)
     }
-    */
 
-
-
-    ///////////////////////// FUNCTIONS /////////////////////////////////////////
-
-
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-    // Hardware 125 (12.5), AI Cores 75 (7.5), Real Estate 27k (2.7k)
-
-    /*
-    for (const city of cities) {
-        let hardware = corp.getMaterial("Agriculture", city, "Hardware");
-        let aiCores = corp.getMaterial("Agriculture", city, "AI Cores");
-        let realEstate = corp.getMaterial("Agriculture", city, "Real Estate");
- 
-        if (hardware.qty < 125) {
-            corp.buyMaterial("Agriculture", city, "Hardware", (125 - hardware.qty) / 10);
-            hardware = corp.getMaterial("Agriculture", city, "Hardware");
-            await ns.sleep(50);
-        }
-        corp.buyMaterial("Agriculture", city, "Hardware", 0);
- 
-        if (aiCores.qty < 75) {
-            corp.buyMaterial("Agriculture", city, "AI Cores", (75 - aiCores.qty) / 10);
-            aiCores = corp.getMaterial("Agriculture", city, "AI Cores");
-            await ns.sleep(50);
-        }
-        corp.buyMaterial("Agriculture", city, "AI Cores", 0);
- 
-        if (realEstate.qty < 27000) {
-            corp.buyMaterial("Agriculture", city, "Real Estate", (27000 - realEstate.qty) / 10);
-            realEstate = corp.getMaterial("Agriculture", city, "Real Estate");
-            await ns.sleep(50);
-        }
-        corp.buyMaterial("Agriculture", city, "Real Estate", 0);
-    }
-*/
-    // set prices
-
-    /*
-        // set people
-        for (const city of cities) {
-            let office = corp.getOffice("Agriculture", city);
-            if (office.employees.length < 3) {
-                for (let i = 0; i < 3 - office.employees.length; i++) corp.hireEmployee("Agriculture", city);
-            }
-            office = corp.getOffice("Agriculture", city);
-            await corp.assignJob("Agriculture", city, office.employees[0], "Operations");
-            await corp.assignJob("Agriculture", city, office.employees[1], "Engineer");
-            await corp.assignJob("Agriculture", city, office.employees[2], "Business");
-        }*/
 }
