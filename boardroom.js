@@ -208,7 +208,7 @@ export async function main(ns) {
 
     async function updateBaseData(ns) {
         //ns.print(`TEST1`)
-        ns.print(`Resetting corp/div objects....`);
+        //ns.print(`Resetting corp/div objects....`);
         corp1 = corp.getCorporation();
         //ns.print(`TEST2`)
         profit = (corp1.revenue - corp1.expenses);
@@ -218,11 +218,11 @@ export async function main(ns) {
         division = corp.getDivision(div);
         //ns.print(`TEST5`)
         upgradeScale = logBase(phase + 10, industryDB.find(d => d.name == division.type).incFac);
-        ns.print(`upgradeScale: ${upgradeScale}`);
+        // ns.print(`upgradeScale: ${upgradeScale}`);
         incomeThreshold = Math.pow(1.5e6, upgradeScale);
-        ns.print(`incomeThreshold: ${incomeThreshold}`);
+        //ns.print(`incomeThreshold: ${incomeThreshold}`);
         upgradeSpeed = 1 / logBase(phase + 10, industryDB.find(d => d.name == division.type).upFac) / 10;
-        ns.print(`upgradeSpeed: ${upgradeSpeed}`);
+        //ns.print(`upgradeSpeed: ${upgradeSpeed}`);
         materials = industryDB.find(d => d.name == division.type).materialRatio;
 
 
@@ -545,7 +545,7 @@ export async function main(ns) {
                     ns.print(`INFO: ${cityName}: Not enough ${material[0]}, purchasing ${Math.round(amt * amt_proportion)}/sec until we have ${desiredStock} - %${((currentstock / desiredStock) * 100).toFixed(1)}.`);
 
                     await corp.buyMaterial(divname, cityName, material[0], (perSecAmt));
-                    await ns.sleep(timing_interval);
+                    await ns.sleep(purchase_timing_interval);
                     await corp.buyMaterial(divname, cityName, material[0], 0) //reset to 0 after buy cycle
                     currentstock = corp.getMaterial(divname, cityName, material[0]).qty
 
