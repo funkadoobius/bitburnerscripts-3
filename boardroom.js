@@ -517,6 +517,12 @@ export async function main(ns) {
         //ns.print(`${cityName}: Getting materials...`)
         updateBaseData(ns);
         for (let material of materials) {
+            await corp.sellMaterial(divname, cityName, material[0], "", "");//stop selling material
+            await corp.buyMaterial(divname, cityName, material[0], 0) // stop buying material
+        }
+
+
+        for (let material of materials) {
 
             updateEmpMeta(ns, divname, cityName);
 
@@ -524,25 +530,29 @@ export async function main(ns) {
             let amt_proportion = 1 / (purchase_timing_interval / (purchase_timing_interval / bonusTime))
 
             // how many units of this material in the warehouse
-            let currentstock = Math.floor(corp.getMaterial(divname, cityName, material[0]).qty);
+            let currentstock = (corp.getMaterial(divname, cityName, material[0]).qty);
 
             // what is our target stock volume. (half the warehouse space * the percent of availble space for that material divided by the material size)
-            let desiredStock = Math.floor(((wh_size / 2) * material[1]) / materialSizes[material[0]]);
+            let desiredStock = (((wh_size / 2) * material[1]) / materialSizes[material[0]]);
 
             // how much we need to change stock by
             let amt = desiredStock - currentstock;
-            //ns.print(`START amt: ${amt} - whpercentused: ${wh_percent_used} - proportion ${amt_proportion}`)
-            //ns.print(`${cityName}: Checking ${material[0]}, has ${currentstock} of ${desiredStock}`);
-            while (currentstock !== desiredStock) {
-                // ns.print(`${cityName} staring buy/sell loop`)
-                await corp.sellMaterial(divname, cityName, material[0], "", "");//stop selling material
-                await corp.buyMaterial(divname, cityName, material[0], 0) // stop buying material
+
+            let loopcount = 0;
+            while (currentstock > desiredStock * 1.1 || currentstock < desiredStock * 0.9) {
+                loopcount += 1;
+                loopcount % 5 == 0 ? bonusTime = 100 : bonusTime = 10;
+
                 amt = desiredStock - currentstock;
                 amt_proportion = 1 / (purchase_timing_interval / (purchase_timing_interval / bonusTime))
                 let perSecAmt = amt * amt_proportion;
-                //if (perSecAmt < 1) perSecAmt = 1;
-                if (amt > 0 && wh_percent_used < 100) {
-                    ns.print(`INFO: ${cityName}: Not enough ${material[0]}, purchasing ${Math.round(amt * amt_proportion)}/sec until we have ${desiredStock} - %${((currentstock / desiredStock) * 100).toFixed(1)}.`);
+                if (amt == 0 || desiredStock == 0) {
+                    //if (wh_percent_used == 100) break;
+                    ns.print(`INFO: ${cityName}:  ${material[0]} stock optimized. no changes needed `)
+                    await ns.sleep(purchase_timing_interval / 10)
+
+                } else if (amt > 0 && desiredStock !== 0) {
+                    ns.print(`INFO: ${cityName}: Not enough ${material[0]}, purchasing ${(amt * amt_proportion)}/sec until we have ${desiredStock} - %${((currentstock / desiredStock) * 100).toFixed(1)}.`);
 
                     await corp.buyMaterial(divname, cityName, material[0], (perSecAmt));
                     await ns.sleep(purchase_timing_interval);
@@ -550,30 +560,29 @@ export async function main(ns) {
                     currentstock = corp.getMaterial(divname, cityName, material[0]).qty
 
 
-                } else if (amt < 0) {
+                } else if (amt < 0 && currentstock > 0) {
 
                     ns.print(`INFO: ${cityName}: Too many units of ${material[0]} in stock. selling ${-amt} - %${((currentstock / desiredStock) * 100).toFixed(1)}`)
 
                     await corp.sellMaterial(divname, cityName, material[0], -perSecAmt, "0");
-                    await ns.sleep(timing_interval);
+                    await ns.sleep(purchase_timing_interval);
                     await corp.sellMaterial(divname, cityName, material[0], "", "")
                     currentstock = corp.getMaterial(divname, cityName, material[0]).qty
                     if (wh_percent_used == 100) break;
 
-                } else if (amt == 0) {
-                    //if (wh_percent_used == 100) break;
-                    ns.print(`INFO: ${cityName}:  ${material[0]} stock optimized. no changes needed `)
-                    await ns.sleep(timing_interval / 10)
-                } else await ns.sleep(timing_interval / 10);
 
+                } else {
+                    ns.print(`FAILURE: ${cityName}:  ${material[0]} INFINITE LOOP CATCHER `)
+                    await ns.sleep(purchase_timing_interval / 10);
+                }
 
-                currentstock = Math.floor(corp.getMaterial(divname, cityName, material[0]).qty);
-                desiredStock = Math.floor(((wh_size / 2) * material[1]) / materialSizes[material[0]]);
+                currentstock = (corp.getMaterial(divname, cityName, material[0]).qty);
+                desiredStock = (((wh_size / 2) * material[1]) / materialSizes[material[0]]);
                 //amt = desiredStock - currentstock;
                 updateBaseData(ns);
                 updateEmpMeta(ns, divname, cityName);
                 //ns.print(`${cityName}: Currentstock: ${currentstock} - DesiredStock: ${desiredStock} - amt: ${amt}`)
-                //await ns.sleep(timing_interval / 10);
+                //await ns.sleep(purchase_timing_interval / 10);
             }
             ns.print(`INFO: ${cityName}: Material: ${material[0]} Currentstock: ${currentstock} - DesiredStock: ${desiredStock} - amt: ${amt}`)
 
@@ -672,6 +681,30 @@ export async function main(ns) {
             return result * sortOrder;
         }
     }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
@@ -781,6 +814,8 @@ export async function main(ns) {
                 }
 
             } else ns.print(`uknown error in warehouse creation`)
+            await purchaseMaterials(ns, division.name, cityName);
+            await ns.sleep(1005);
             updateBaseData(ns);
             // increase the size of the office up to the phase limit
             await officeUpgrader(ns, division.name, cityName, false)
