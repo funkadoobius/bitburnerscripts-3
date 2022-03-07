@@ -165,3 +165,43 @@ This is transcribed from https://github.com/danielyxie/bitburner/blob/master/src
 
 Just search for Employee.prototype.calculateProductivity
 3
+
+
+
+WANT x EMPLOYEES ASSIGNED TO A JOB
+
+LOAD EMPLOYEES IN TO db
+
+WHICH JOB ARE FILLING
+
+    WHICH STAT IS PREFERRED FOR THAT JOB
+
+    SORT ARRAY OF OBJECT FOR THAT STAT
+
+    
+FIND TOP x CURRENTLY UNASSIGNED EMPLOYEES AND ASSIGN THEM.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

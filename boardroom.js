@@ -9,7 +9,7 @@ and materials to put in the warehouse. this would replace switched 3d arrays.
 */
 
 const argsSchema = [
-    ['phase', 1], // Do nothing but hack, no prepping (drains servers to 0 money, if you want to do that for some reason)
+    ['phase', 1],
     ['div', "Agriculture"]
 ];
 export function autocomplete(data, args) {
@@ -17,17 +17,6 @@ export function autocomplete(data, args) {
     return [];
 }
 export async function main(ns) {
-
-    //let player = ns.getPlayer();
-
-    //let multi = player.bitNodeN === 1 || player.bitNodeN === 3 ? 1 : 0;
-    //if (dictSourceFiles[5] > 0) multi = ns.getBitNodeMultipliers().corpValuation;
-
-    /**if (!corp.hasUnlockUpgrade("Warehouse API") && corp.getUnlockUpgradeCost("Warehouse API") > corp1.funds) {
-        throw new Error("FAILED: Insufficient funds for Warehouse API, required")
-    } else if (!corp.hasUnlockUpgrade("Warehouse API") && corp.getUnlockUpgradeCost("Warehouse API") < corp1.funds) {
-        corp.unlockUpgrade("Warehouse API");
-    }**/
 
 
     let args = ns.flags(argsSchema);
@@ -545,7 +534,11 @@ export async function main(ns) {
             while (currentstock > desiredStock * 1.1 || currentstock < desiredStock * 0.9) {
                 loopcount += 1;
                 loopcount % 3 == 0 ? bonusTime = 100 : bonusTime = 10;
+                if (loopcount > 5) {
+                    await corp.sellMaterial(divname, cityName, material[0], "", "");
+                    await corp.buyMaterial(divname, cityName, material[0], 0);
 
+                }
                 amt = desiredStock - currentstock;
 
                 amt_proportion = 1 / (purchase_timing_interval / (purchase_timing_interval / bonusTime))
@@ -671,7 +664,9 @@ export async function main(ns) {
     async function headResearcher(ns, divname) {
         updateBaseData(ns);
 
-        let researchOrder = ["Hi-Tech R&D Laboratory", "Market-TA.I", "Market-TA.II"];
+        let researchOrder = ["Hi-Tech R&D Laboratory", "Drones", "Automatic Drug Administration", "Overclock", "Drones - Assembly",
+            "Self-Correcting Assemblers", "CPH4 Injections", "Drones - Transport", "Market-TA.I", "Market-TA.II"];
+
         let currentResearchAmt = division.research;
         for (let science of researchOrder) {
             if (corp.hasResearched(divname, science)) {
@@ -921,7 +916,7 @@ export async function main(ns) {
                 }
 
             } else ns.print(`uknown error in warehouse creation`)
-            
+
             await purchaseMaterials(ns, division.name, cityName);
             await productManager(ns, division.name, cityName);
             await ns.sleep(1005);
@@ -978,7 +973,7 @@ export async function main(ns) {
             await whUpgrader(ns, division.name, cityName);
             //await ns.sleep(1004);
 
-            
+
 
             await purchaseMaterials(ns, division.name, cityName);
             await productManager(ns, division.name, cityName);
