@@ -573,7 +573,7 @@ export async function main(ns) {
                     await ns.sleep(purchase_timing_interval);
                     await corp.sellMaterial(divname, cityName, material[0], "", "")
                     currentstock = corp.getMaterial(divname, cityName, material[0]).qty
-                    if (wh_percent_used == 100) break;
+                    //if (wh_percent_used == 100) break;
 
 
                 } else {
@@ -921,8 +921,9 @@ export async function main(ns) {
                 }
 
             } else ns.print(`uknown error in warehouse creation`)
-            await productManager(ns, division.name, cityName);
+            
             await purchaseMaterials(ns, division.name, cityName);
+            await productManager(ns, division.name, cityName);
             await ns.sleep(1005);
             updateBaseData(ns);
             // increase the size of the office up to the phase limit
@@ -975,21 +976,22 @@ export async function main(ns) {
 
             // if (wh_percent_used > 80) {
             await whUpgrader(ns, division.name, cityName);
-            await ns.sleep(1004);
+            //await ns.sleep(1004);
 
-            await productManager(ns, division.name, cityName);
+            
 
             await purchaseMaterials(ns, division.name, cityName);
-            await ns.sleep(1005);
+            await productManager(ns, division.name, cityName);
+            //await ns.sleep(1005);
 
             //if (employeeMeta.avgEne > 99.9 && employeeMeta.avgHap > 99.9) {
 
 
             await officeUpgrader(ns, division.name, cityName, true)
-            await ns.sleep(1021)
+            //await ns.sleep(1021)
             //hire the first round of emplyees
             await fillOffice(ns, division.name, cityName);
-            await ns.sleep(1001);
+            //await ns.sleep(1001);
 
             updateEmpMeta(ns, division.name, cityName);
             if (maintLoopCounter % 15 == 0) {
