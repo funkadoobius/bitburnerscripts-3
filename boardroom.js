@@ -541,50 +541,62 @@ export async function main(ns) {
                     await whUpgrader(ns, divname, cityName);
 
                 }
+
                 amt = desiredStock - currentstock;
+
+                let switchStatus = "";
+                if (wh_percent_used < 99) {
+                    if (amt == 0 || desiredStock == 0) {
+                        switchStatus = "nothing"
+                    } else if (amt > 0 && desiredStock !== 0) {
+                        switchStatus = "buy"
+                    } else if (amt < 0 && currentstock > 0) {
+                        switchStatus = "sell"
+                    }
+                } else {
+                    switchStatus = "sell"
+                    amt = -100000;
+                }
+
+
                 amt_proportion = 1 / (purchase_timing_interval / (purchase_timing_interval / bonusTime))
                 let perSecAmt = amt * amt_proportion;
 
-                if (amt == 0 || desiredStock == 0) {
-                    //if (wh_percent_used == 100) break;
-                    ns.print(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: ${material[0]} stock optimized. no changes needed `)
-                    await ns.sleep(purchase_timing_interval / 10)
-                    break;
-
-                } else if (amt > 0 && desiredStock !== 0) {
-                    ns.print(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: BUYING ${material[0]} @ ${(amt * amt_proportion).toFixed(2)} - %${((currentstock / desiredStock) * 100).toFixed(1)}`);
-
-                    await corp.buyMaterial(divname, cityName, material[0], (perSecAmt));
-                    await ns.sleep(purchase_timing_interval);
-                    await corp.buyMaterial(divname, cityName, material[0], 0) //reset to 0 after buy cycle
-                    currentstock = corp.getMaterial(divname, cityName, material[0]).qty
 
 
-                } else if (amt < 0 && currentstock > 0) {
+                switch (switchStatus) {
 
-                    ns.print(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: SELLING ${material[0]} @ ${-amt.toFixed(2)} - %${((currentstock / desiredStock) * 100).toFixed(1)}`)
+                    case "buy":
+                        ns.print(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: BUYING ${material[0]} @ ${(amt * amt_proportion).toFixed(2)} - %${((currentstock / desiredStock) * 100).toFixed(1)}`);
+                        await corp.buyMaterial(divname, cityName, material[0], (perSecAmt));
+                        await ns.sleep(purchase_timing_interval);
+                        await corp.buyMaterial(divname, cityName, material[0], 0) //reset to 0 after buy cycle
+                        currentstock = corp.getMaterial(divname, cityName, material[0]).qty
 
-                    await corp.sellMaterial(divname, cityName, material[0], -perSecAmt, "0");
-                    await ns.sleep(purchase_timing_interval);
-                    await corp.sellMaterial(divname, cityName, material[0], "", "")
-                    currentstock = corp.getMaterial(divname, cityName, material[0]).qty
-                    //if (wh_percent_used == 100) break;
+                    case "sell":
+                        ns.print(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: SELLING ${material[0]} @ ${-amt.toFixed(2)} - %${((currentstock / desiredStock) * 100).toFixed(1)}`)
+                        await corp.sellMaterial(divname, cityName, material[0], -perSecAmt, "0");
+                        await ns.sleep(purchase_timing_interval);
+                        await corp.sellMaterial(divname, cityName, material[0], "", "")
+                        currentstock = corp.getMaterial(divname, cityName, material[0]).qty
 
-
-                } else {
-                    ns.print(`FAILURE: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}:  ${material[0]} INFINITE LOOP CATCHER `)
-                    await ns.sleep(purchase_timing_interval / 10);
+                    case "nothing":
+                        ns.print(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: ${material[0]} stock optimized. no changes needed `)
+                        await ns.sleep(purchase_timing_interval / 10)
+                        break;
                 }
+
+
+                ns.print(`FAILURE: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}:  ${material[0]} INFINITE LOOP CATCHER `)
+                await ns.sleep(purchase_timing_interval / 10);
+
 
                 currentstock = (corp.getMaterial(divname, cityName, material[0]).qty);
                 desiredStock = (((wh_size / 2) * material[1]) / materialSizes[material[0]]);
                 updateBaseData(ns);
                 updateEmpMeta(ns, divname, cityName);
-                //ns.print(`${cityName}: Currentstock: ${currentstock} - DesiredStock: ${desiredStock} - amt: ${amt}`)
-                //await ns.sleep(purchase_timing_interval / 10);
-            }
-            //ns.print(`INFO: ${cityName}: Material: ${material[0]} Currentstock: ${currentstock.toFixed(2)} - DesiredStock: ${desiredStock.toFixed(2)} - amt: ${amt.toFixed(2)}`)
 
+            }
 
         };
 
@@ -592,16 +604,7 @@ export async function main(ns) {
 
 
     ///////////////////////////////////////////////////////////////////////////////////////////
-    /*
-        async function productMaker(ns, div, cityName) {
-            let currentDiv = divisionInfo.filter(d => { d.name ==div });
-                    
-            for (let productName of currentDiv.products){
-                
-            corp.makeProduct(divisionName, cityName, productName, 1e9, 1e9);
-            }
-        }
-    */
+
     ///////////////////////////////////////////////////////////////////////////////////////////
 
 
@@ -635,7 +638,7 @@ export async function main(ns) {
                 if ((employee.pos == "Training" || employee.pos == "Unassigned") && employeeMeta[job.name] < jobTarget) {
 
                     await corp.assignJob(div, cityName, employee.name, job.name)
-                    ns.print(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: ${employeeMeta[job.name]+1} of ${jobTarget}`);
+                    ns.print(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: ${employeeMeta[job.name] + 1} of ${jobTarget}`);
                     ns.print(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: Assigning Name: ${employee.name} - ${job.primeStat} = ${employee[job.primeStat]} to ${job.name}`);
                     employeeDB[employee.pos] = job.name;
 
@@ -685,12 +688,13 @@ export async function main(ns) {
     async function productManager(ns, divisionName, cityName) {
         updateBaseData(ns);
         let productName = divisionName.concat("-", Math.ceil((Math.random() + Math.random()) * 10));
-        let designInvest = 1e9;
-        let marketingInvest = 1e9;
+        let designInvest = corp1.funds > 1e20 ? 1e12 : 1e9;
+        let marketingInvest = corp1.funds > 1e20 ? 1e12 : 1e9;
         let products = division.products;
         let hasTA2 = corp.hasResearched(division.name, "Market-TA.II");
         let prodMeta = [];
         let choppingBlock = []
+        let maxProducts = corp.hasResearched(division.name, "uPgrade: Capacity.I") ? 4 : 3;
 
         while (products.includes(productName)) {
             productName = divisionName.concat("-", Math.ceil((Math.random() + Math.random()) * 10))
@@ -698,21 +702,21 @@ export async function main(ns) {
         if (makesProds) {
 
             for (let p of products) {
-                let temp = corp.getProduct(divisionName, p)
-                if (temp.developmentProgress > 100) prodMeta.push(temp);
+                let prod = corp.getProduct(divisionName, p)
+                if (prod.developmentProgress > 100) prodMeta.push(prod);
             }
             prodMeta.length !== 0 ? choppingBlock = prodMeta.sort(dynamicSort("dmd")) : choppingBlock;
 
-            if (products.length <= 3) {
+            if (products.length <= maxProducts - 1) {
                 corp.makeProduct(divisionName, cityName, productName, designInvest, marketingInvest);
                 ns.print(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName} Product ${productName} created. `);
 
-            } else if (prodMeta.length >= 4) {
+            } else if (prodMeta.length >= maxProducts) {
                 corp.discontinueProduct(divisionName, choppingBlock[choppingBlock.length - 1].name)
                 ns.print(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName} Product ${choppingBlock[choppingBlock.length - 1].name} DISCONTINUED`);
             }
 
-            if (prodMeta.length >= 1 && prodMeta.length <= 3) {
+            if (prodMeta.length >= 1 && prodMeta.length <= maxProducts - 1) {
                 for (let product of prodMeta) {
                     //ns.print(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName} Product ${product.name} loaded. `);
 
@@ -778,21 +782,6 @@ export async function main(ns) {
             return result * sortOrder;
         }
     }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
