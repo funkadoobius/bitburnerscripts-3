@@ -543,17 +543,26 @@ export async function main(ns) {
                 }
 
                 amt = desiredStock - currentstock;
+                ns.print(`amt:${amt}  = desiredStock:${desiredStock} - currentstock:${currentstock}`)
+                ns.print(`wh_percent_used: ${wh_percent_used}`)
 
                 let switchStatus = "";
                 if (wh_percent_used < 99) {
                     if (amt == 0 || desiredStock == 0) {
+
                         switchStatus = "nothing"
+                        ns.print(`switchStatus: ${switchStatus}`)
                     } else if (amt > 0 && desiredStock !== 0) {
                         switchStatus = "buy"
+                        ns.print(`switchStatus: ${switchStatus}`)
+
                     } else if (amt < 0 && currentstock > 0) {
                         switchStatus = "sell"
+                        ns.print(`switchStatus: ${switchStatus}`)
+
                     }
                 } else {
+                    ns.print(`Emergency Sell: ${wh_percent_used}`)
                     switchStatus = "sell"
                     amt = -100000;
                 }
@@ -561,8 +570,10 @@ export async function main(ns) {
 
                 amt_proportion = 1 / (purchase_timing_interval / (purchase_timing_interval / bonusTime))
                 let perSecAmt = amt * amt_proportion;
+                ns.print(`amt_proportion: ${amt_proportion}`)
+                ns.print(`perSecAmt: ${perSecAmt}`)
 
-
+                ns.print(`switchStatus: ${switchStatus}`)
 
                 switch (switchStatus) {
 
@@ -572,6 +583,7 @@ export async function main(ns) {
                         await ns.sleep(purchase_timing_interval);
                         await corp.buyMaterial(divname, cityName, material[0], 0) //reset to 0 after buy cycle
                         currentstock = corp.getMaterial(divname, cityName, material[0]).qty
+                        break
 
                     case "sell":
                         ns.print(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: SELLING ${material[0]} @ ${-amt.toFixed(2)} - %${((currentstock / desiredStock) * 100).toFixed(1)}`)
@@ -579,6 +591,7 @@ export async function main(ns) {
                         await ns.sleep(purchase_timing_interval);
                         await corp.sellMaterial(divname, cityName, material[0], "", "")
                         currentstock = corp.getMaterial(divname, cityName, material[0]).qty
+                        break;
 
                     case "nothing":
                         ns.print(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: ${material[0]} stock optimized. no changes needed `)
@@ -587,7 +600,7 @@ export async function main(ns) {
                 }
 
 
-                ns.print(`FAILURE: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}:  ${material[0]} INFINITE LOOP CATCHER `)
+                //ns.print(`FAILURE: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}:  ${material[0]} INFINITE LOOP CATCHER `)
                 await ns.sleep(purchase_timing_interval / 10);
 
 
@@ -864,6 +877,9 @@ export async function main(ns) {
 
 
         for (let cityName of cities) { // iterate through the full list of cities
+
+            if (!division.cities.includes(cityName)) await corp.expandCity(division.name, cityName);
+
 
             await officeUpgrader(ns, division.name, cityName, false)
             updateBaseData(ns);

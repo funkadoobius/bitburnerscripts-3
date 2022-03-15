@@ -1,23 +1,10 @@
 /** @param {NS} ns **/
-
-//let args = [];
-//export function autocomplete(data, args) {
-//    data.flags(argsSchema);
-//    return [];
-//}
-
 export async function main(ns) {
 
     //let corp1 = corp.getCorporation();
 
     const corp = eval("ns.corporation"); ///shhhh
 
-
-    const argsSchema = [
-        ['kill', false],
-        ['restart', false]
-        ['opentail', false]
-    ];
 
     let industryDB = [
         {
@@ -130,38 +117,19 @@ export async function main(ns) {
     for (let div of corp1.divisions) {
         divisions.push(div.name);
     }
-    ns.print(divisions)
-    //let args = ns.flags(argsSchema);
 
-    let restart = true;
-    let kill = false;
-    let start = false;
-    let tail = false;
+
     //ns.print(divisions)
-
-    if (restart || kill) {
-        ns.print(`Stopping scripts`)
-        ns.scriptKill("boardroom.js", "home");
-
-    }
-    ns.print(restart, kill, tail)
+while (true) {
 
     for (let divName of divisions) {
-        let arg = "";
 
-        let pid = 0;
-
-
-        if (restart || start) {
-
-            pid = ns.exec("boardroom.js", "home", 1, "--div", divName)
-            ns.print(`Starting script# ${pid} for ${divName}`)
-        }
-
-        if (tail) {
-            ns.tail(pid);
-        }
-
+        let args = `--div `;
+        args = args.concat(divName);
+        ns.print(`Running script for ${divName}`)
+        ns.exec("boardroom.js", "home", 1, "--div", divName);
 
     }
+    await ns.sleep(6000);
+}
 }
