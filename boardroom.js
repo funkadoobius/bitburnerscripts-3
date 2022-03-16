@@ -542,7 +542,8 @@ export async function main(ns) {
 
                 }
 
-                amt = desiredStock - currentstock;
+                //amt = desiredStock - currentstock;
+                ns.print(`loopcount: ${loopcount}`)
                 ns.print(`amt:${amt}  = desiredStock:${desiredStock} - currentstock:${currentstock}`)
                 ns.print(`wh_percent_used: ${wh_percent_used}`)
 
@@ -563,8 +564,8 @@ export async function main(ns) {
                     }
                 } else {
                     ns.print(`Emergency Sell: ${wh_percent_used}`)
-                    switchStatus = "sell"
-                    amt = -100000;
+                    //switchStatus = "sell"
+                    //amt = -100000;
                 }
 
 
@@ -582,7 +583,7 @@ export async function main(ns) {
                         await corp.buyMaterial(divname, cityName, material[0], (perSecAmt));
                         await ns.sleep(purchase_timing_interval);
                         await corp.buyMaterial(divname, cityName, material[0], 0) //reset to 0 after buy cycle
-                        currentstock = corp.getMaterial(divname, cityName, material[0]).qty
+                        //currentstock = corp.getMaterial(divname, cityName, material[0]).qty
                         break
 
                     case "sell":
@@ -590,7 +591,7 @@ export async function main(ns) {
                         await corp.sellMaterial(divname, cityName, material[0], -perSecAmt, "0");
                         await ns.sleep(purchase_timing_interval);
                         await corp.sellMaterial(divname, cityName, material[0], "", "")
-                        currentstock = corp.getMaterial(divname, cityName, material[0]).qty
+                        //currentstock = corp.getMaterial(divname, cityName, material[0]).qty
                         break;
 
                     case "nothing":
