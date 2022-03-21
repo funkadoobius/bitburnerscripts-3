@@ -302,44 +302,6 @@ export async function main(ns) {
     }
 
 
-
-
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /*
-    getNoffer()
-    get an investment offer and accept based on the round number
-    */
-
-
-    function getNoffer(ns) {
-
-        let offer = corp.getInvestmentOffer();
-        var target_funds = 0;
-        switch (offer.round) {
-            case 1:
-                target_funds = 2e11; // 200B
-                break;
-            case 2:
-                target_funds = 5e12; // 5T
-                break;
-            case 3:
-                target_funds = 3e13; // 50T
-                break;
-            case 4:
-                target_funds = 3e14; // 500T
-                break;
-
-            default:
-                break;
-        }
-
-        if (offer.funds > target_funds) {
-            corp.acceptInvestmentOffer();
-            return true;
-        }
-    }
-
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
     /*
     createIndustry() 
@@ -374,28 +336,6 @@ export async function main(ns) {
 
     }
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /*
-    purchaseUpgrade()
-    purchase corp1 unlockable upgrades based on a predfined order list.
-    
-
-    function purchaseUnlock(ns, corpUpgrade) {
-        ns.print(`Checking for funds to purchase unlocks...`);
-        updateBaseData(ns);; //refresh corp1 stats
-        if (corp.hasUnlockUpgrade(corpUpgrade) && corp.getUnlockUpgradeCost(corpUpgrade) <= corp1.funds) {
-            ns.print(`Purchasing unlocks...`);
-            corp.unlockUpgrade(corpUpgrade);
-            ns.print(`SUCCESS`);
-            return;
-        } else if (!corp.hasUnlockUpgrade(corpUpgrade) && corp.getUnlockUpgradeCost(corpUpgrade) > corp1.funds) {
-            ns.print("FAILED: Insufficient funds to buy ", corpUpgrade);
-        } else ns.print(`SUCCESS: ${corpUpgrade} already owned`);
-    }
-*/
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -416,81 +356,6 @@ export async function main(ns) {
     }
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-    async function corpUpgrader(ns, force) {
-        updateBaseData(ns);
-        ns.print(`CORP-UPGRADER: Checking for levelable upgrade...`);
-        for (let upgrade of corpUpgrades) {
-
-            if (force && corp.getUpgradeLevelCost(upgrade) < corp1.funds * upgradeSpeed) {
-                await corp.levelUpgrade(upgrade);
-                ns.print(`SUCCESS: ${upgrade} level increased by 1.`)
-
-            } else ns.print(`FAILED: Insufficient funds to Upgrade ${upgrade}`);
-
-            updateBaseData(ns);
-        };
-    };
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
-    async function officeUpgrader(ns, divname, cityName, force) {
-        updateEmpMeta(ns, divname, cityName);
-
-        ns.print(`PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: Checking for office upgrades...`);
-
-        let thisOffice = corp.getOffice(divname, cityName);
-        let upgradeSize = 10;
-
-        if (force && corp.getOfficeSizeUpgradeCost(divname, cityName, 10) < corp1.funds * upgradeSpeed) {
-            await corp.upgradeOfficeSize(divname, cityName, upgradeSize);
-        }
-        //ns.print(`upgradeSpeed: ${upgradeSpeed}`);
-        let cost = corp.getOfficeSizeUpgradeCost(divname, cityName, upgradeSize)
-
-
-        if (cost > (corp1.funds * upgradeSpeed) && ns.getOfficeSizeUpgradeCost < corp1.funds * 0.7 && employeeMeta.avgEne > 99.99 && employeeMeta.avgHap > 99.99) {
-            ns.print(`PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: Office upgrades available. Happiness and Energy recovered`);
-            if (await corp.upgradeOfficeSize(divname, cityName, upgradeSize)) {
-                ns.print(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: : added ${upgradeSize} cubicles to office `);
-            } else ns.print(`FAILED: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: : could not add ${upgradeSize} cubicles to office `);
-
-            await ns.sleep(1007);
-
-        }
-
-        //ns.print(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}:  Insufficient Funds. cost ${cost.toFixed(2)} greater than ${(corp1.funds * upgradeSpeed).toFixed(2)}`)
-
-    }
-
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    /*
-    fillOffice(division name, city name)
-    fill all open positions in the specified office, then iterate through a 3d array to auto assign employees to positions, determined by phase
-    */
-    async function fillOffice(ns, divname, cityName) {
-        updateEmpMeta(ns, divname, cityName);
-        //ns.print(`${cityName}: Hiring employees to fill the office...`);
-        let thisOffice = corp.getOffice(divname, cityName);
-        let i = thisOffice.employees.length;
-        let newhires = thisOffice.size - i;
-        ns.print(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}:  Current employees: ${i}, of ${thisOffice.size}. ${newhires}  newhires needed`);
-
-
-        while (i < thisOffice.size) {
-            await corp.hireEmployee(divname, cityName);
-            i++;
-            ns.print(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}:  hired employee ${i} of ${thisOffice.size}`);
-            await ns.sleep(100);
-        }
-
-
-    }
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
-
-
 
     async function hrDept(ns, div, cityName, shuffle) {
         updateEmpMeta(ns, div, cityName);
@@ -565,81 +430,6 @@ export async function main(ns) {
     }
     /////////////////////////////////////////////////////////////////////////////////////////////
 
-
-    async function productManager(ns, divisionName, cityName) {
-        updateEmpMeta(ns, divisionName, cityName);
-        let productName = divisionName.concat("-", Math.ceil((Math.random() + Math.random()) * 10));
-        let designInvest = corp1.funds > 1e20 ? 1e12 : 1e9;
-        let marketingInvest = corp1.funds > 1e20 ? 1e12 : 1e9;
-        let products = division.products;
-        let hasTA2 = corp.hasResearched(division.name, "Market-TA.II");
-        let prodMeta = [];
-        let choppingBlock = []
-        let maxProducts = corp.hasResearched(division.name, "uPgrade: Capacity.I") ? 4 : 3;
-
-        while (products.includes(productName)) {
-            productName = divisionName.concat("-", Math.ceil((Math.random() + Math.random()) * 10))
-        }
-        if (makesProds) {
-
-            for (let p of products) {
-                let prod = corp.getProduct(divisionName, p)
-                if (prod.developmentProgress > 100) prodMeta.push(prod);
-            }
-            prodMeta.length !== 0 ? choppingBlock = prodMeta.sort(dynamicSort("dmd")) : choppingBlock;
-
-            if (products.length <= maxProducts - 1) {
-                corp.makeProduct(divisionName, cityName, productName, designInvest, marketingInvest);
-                ns.print(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName} Product ${productName} created. `);
-
-            } else if (prodMeta.length >= maxProducts) {
-                corp.discontinueProduct(divisionName, choppingBlock[choppingBlock.length - 1].name)
-                ns.print(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName} Product ${choppingBlock[choppingBlock.length - 1].name} DISCONTINUED`);
-            }
-
-            if (prodMeta.length >= 1 && prodMeta.length <= maxProducts - 1) {
-                for (let product of prodMeta) {
-                    //ns.print(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName} Product ${product.name} loaded. `);
-
-                    if (hasTA2) {
-                        // 
-                        corp.sellProduct(divisionName, cityName, product.name, "MAX", "MP", true)
-                        ns.print(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName} ${product.name} set to be sold`);
-                        corp.setProductMarketTA1(divisionName, product.name, true)
-                        corp.setProductMarketTA2(divisionName, product.name, true);
-                        ns.print(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName} Market-TA.II set for ${product.name}`);
-                    } else {
-                        corp.sellProduct(divisionName, cityName, product.name, "MAX", "MP", true)
-                        ns.print(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName} ${product.name} set to be sold in ${cityName}`);
-                    }
-
-                }
-            }
-        }
-        let prodmats = industryDB.find(d => d.name == division.type).prodMats;
-        if (prodmats.length >= 1) {
-            for (let mat of prodmats) {
-                updateBaseData(ns);
-
-                if (hasTA2) {
-                    //
-                    await corp.sellMaterial(division.name, cityName, mat, "MAX", "MP");
-                    ns.print(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}${mat} set to be sold`);
-                    await corp.setMaterialMarketTA1(division.name, cityName, mat, true);
-                    await corp.setMaterialMarketTA2(division.name, cityName, mat, true);
-                    ns.print(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}Market-TA.II set for ${mat}`);
-
-                } else if (mat.length >= 1) {
-
-                    await corp.sellMaterial(division.name, cityName, mat, "MAX", "MP");
-                    ns.print(`SUCCESS:PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName} ${mat} set to be sold`);
-                }
-            }
-
-        }
-
-
-    }
 
 
 

@@ -1,135 +1,179 @@
 /** @param {NS} ns **/
+import {
+    formatMoney, formatRam, formatDuration, formatDateTime, formatNumber,
+    scanAllServers, hashCode, disableLogs, log as logHelper, getFilePath,
+    getNsDataThroughFile_Custom, runCommand_Custom, waitForProcessToComplete_Custom,
+    tryGetBitNodeMultipliers_Custom, getActiveSourceFiles_Custom,
+    getFnRunViaNsExec, getFnIsAliveViaNsPs
+} from './helpers.js'
+
 export async function main(ns) {
 
     //let corp1 = corp.getCorporation();
 
     const corp = eval("ns.corporation"); ///shhhh
 
+    let divisionDB = [
+        { name: "Agriculture", startPoint: 1.5e10 },
+        { name: "Mining", startPoint: 1.5e11 },
+        { name: "Tobacco", startPoint: 5e11 },
+        { name: "Energy", startPoint: 1e12 },
+        { name: "Food", startPoint: 4e12 },
+        { name: "Utilities", startPoint: 1.5e13 },
+        { name: "Computer", startPoint: 5e13 },
+        { name: "Fishing", startPoint: 1.5e14 },
+        { name: "Software", startPoint: 5e14 },
+        { name: "Chemical", startPoint: 1e15 },
+        { name: "Pharmaceutical", startPoint: 5e15 },
+        { name: "Robotics", startPoint: 1.5e17 },
+        { name: "Healthcare", startPoint: 1.5e18 },
+        { name: "RealEstate", startPoint: 1.5e19 }
+    ]
 
-    let industryDB = [
-        {
-            name: "Energy",
-            makesProducts: false, prodMats: ["Energy"],
-            materialRatio: [["Hardware", 0], ["AI Cores", .20], ["Real Estate", .80], ["Robots", 0]], // based on charts
-            reFac: 0.65, sciFac: 0.7, hwFac: 0, robFac: 0.05, aiFac: 0.3, advFac: 0.08,
-            reqMats: { "Hardware": 0.1, "Metal": 0.2 }, incFac: 9, upFac: 5
-        },
+    let corpUpgrades = ["Smart Factories", "Smart Storage", "FocusWires", "Neural Accelerators", "Speech Processor Implants", "Nuoptimal Nootropic Injector Implants", "Wilson Analytics",
+        "DreamSense", "ABC SalesBots", "Project Insight"];
 
-        {
-            name: "Utilities",
-            makesProducts: false, prodMats: ["Water"],
-            materialRatio: [["Hardware", .25], ["AI Cores", .25], ["Real Estate", .25], ["Robots", .25]], // Based on charts
-            reFac: 0.5, sciFac: 0.6, hwFac: 0, robFac: 0.4, aiFac: 0.4, advFac: 0.08,
-            reqMats: { "Hardware": 0.1, "Metal": 0.1 }, incFac: 9, upFac: 5
-        },
+    let corpUnlockables = ["Smart Supply", "Export", "VeChain", "Market Research - Demand", "Market Data - Competition", "Shady Accounting", "Government Partnership"]
 
-        {
-            name: "Agriculture",
-            makesProducts: false, prodMats: ["Plants", "Food"],
-            materialRatio: [["Hardware", .1], ["AI Cores", .1], ["Real Estate", .7], ["Robots", .1]], // FROM PROD CHART
-            reFac: 0.72, sciFac: 0.5, hwFac: 0.2, robFac: 0.3, aiFac: 0.3, advFac: 0.04,
-            reqMats: { "Water": 0.5, "Energy": 0.5 }, incFac: 9, upFac: 5
-        },
 
-        {
-            name: "Fishing",
-            makesProducts: false, prodMats: ["Food"],
-            materialRatio: [["Hardware", .3], ["AI Cores", .2], ["Real Estate", 0], ["Robots", .5]], // FROM PROD CHART
-            reFac: 0.15, sciFac: 0.35, hwFac: 0.35, robFac: 0.5, aiFac: 0.2, advFac: 0.08,
-            reqMats: { "Energy": 0.5 }, incFac: 9, upFac: 5
-        },
-        {
-            name: "Mining",
-            makesProducts: false, prodMats: ["Metal"],
-            materialRatio: [["Hardware", .25], ["AI Cores", .25], ["Real Estate", .25], ["Robots", .25]], // FROM PROD CHART
-            reFac: 0.3, sciFac: 0.26, hwFac: 0.4, robFac: 0.45, aiFac: 0.45, advFac: 0.06,
-            reqMats: { "Energy": 0.8 }, incFac: 9, upFac: 5
-        },
-        {
-            name: "Food",
-            makesProducts: true, prodMats: [],
-            materialRatio: [["Hardware", 0], ["AI Cores", .25], ["Real Estate", 0], ["Robots", .25]], // from chart
-            reFac: 0.05, sciFac: 0.12, hwFac: 0.15, robFac: 0.3, aiFac: 0.25, advFac: 0.25,
-            reqMats: { "Food": 0.5, "Water": 0.5, "Energy": 0.2 }, incFac: 9, upFac: 5
-        },
-        {
-            name: "Tobacco",
-            makesProducts: true, prodMats: [],
-            materialRatio: [["Hardware", 0], ["AI Cores", 0], ["Real Estate", 0], ["Robots", .25]], //from chart
-            reFac: 0.15, sciFac: 0.75, hwFac: 0.15, robFac: 0.2, aiFac: 0.15, advFac: 0.2,
-            reqMats: { "Plants": 1, "Water": 0.2 }, incFac: 9, upFac: 5
-        },
-        {
-            name: "Chemical",
-            makesProducts: false, prodMats: ["Chemicals"],
-            materialRatio: [["Hardware", .25], ["AI Cores", .25], ["Real Estate", .25], ["Robots", .25]], // from chart
-            reFac: 0.25, sciFac: 0.75, hwFac: 0.2, robFac: 0.25, aiFac: 0.2, advFac: 0.07,
-            reqMats: { "Plants": 1, "Energy": 0.5, "Water": 0.5 }, incFac: 9, upFac: 5
-        },
-        {
-            name: "Pharmaceutical",
-            makesProducts: true, prodMats: ["Drugs"],
-            materialRatio: [["Hardware", .25], ["AI Cores", .25], ["Real Estate", .25], ["Robots", .25]], //verified
-            reFac: 0.05, sciFac: 0.8, hwFac: 0.15, robFac: 0.25, aiFac: 0.2, advFac: 0.16,
-            reqMats: { "Water": 0.5, "Energy": 1, "Chemicals": 2 }, incFac: 9, upFac: 5
-        },
-        {
-            name: "Computer",
-            makesProducts: true, prodMats: ["Hardware"],
-            materialRatio: [["Hardware", 0], ["AI Cores", .15], ["Real Estate", .20], ["Robots", .30]],
-            reFac: 0.2, sciFac: 0.62, hwFac: 0, robFac: 0.36, aiFac: 0.19, advFac: 0.17,
-            reqMats: { "Energy": 1, "Metal": 2 }, incFac: 9, upFac: 5
-        },
-        {
-            name: "Robotics",
-            makesProducts: true, prodMats: ["Robots"],
-            materialRatio: [["Hardware", 0], ["AI Cores", .30], ["Real Estate", .25], ["Robots", 0]],
-            reFac: 0.32, sciFac: 0.65, hwFac: 0.19, robFac: 0, aiFac: 0.36, advFac: 0.18,
-            reqMats: { "Hardware": 5, "Energy": 3 }, incFac: 9, upFac: 5
-        },
-        {
-            name: "Software",
-            makesProducts: true, prodMats: ["AI Cores"],
-            materialRatio: [["Hardware", 0], ["AI Cores", 0], ["Real Estate", .1], ["Robots", .15]],
-            reFac: 0.15, sciFac: 0.62, hwFac: 0.25, robFac: 0.05, aiFac: 0.18, advFac: 0.16,
-            reqMats: { "Hardware": 0.5, "Energy": 0.5 }, incFac: 9, upFac: 5
-        },
-        {
-            name: "Healthcare",
-            makesProducts: true, prodMats: [],
-            materialRatio: [["Hardware", .25], ["AI Cores", 0], ["Real Estate", .25], ["Robots", 0]],
-            reFac: 0.1, sciFac: 0.75, hwFac: 0.1, robFac: 0.1, aiFac: 0.1, advFac: 0.11,
-            reqMats: { "Robots": 10, "AICores": 5, "Energy": 5, "Water": 5 }, incFac: 9, upFac: 5
-        },
-        {
-            name: "Real Estate",
-            makesProducts: true, prodMats: ["Real Estate"],
-            materialRatio: [["Hardware", 0], ["AI Cores", .25], ["Real Estate", 0], ["Robots", .25]],
-            reFac: 0, sciFac: 0.05, hwFac: 0.05, robFac: 0.6, aiFac: 0.6, advFac: 0.25,
-            reqMats: { "Metal": 5, "Energy": 5, "Water": 2, "Hardware": 4 }, incFac: 9, upFac: 5
-        },
-    ];
+    function updateData() {
+        for (let d of divisionDB) {
+            corp1 = corp.getCorporation();
+            d.running = ns.isRunning("/corp/boardroom.js", "home", "--div", d.name);
+            d.shouldRun = d.startPoint < corp1.funds;
 
-    let industryDBkeys = Object.keys(industryDB);
-    let divisions = [];
-    let corp1 = corp.getCorporation();
-    // ns.print(corp1.divisions);
-    for (let div of corp1.divisions) {
-        divisions.push(div.name);
+            //ns.print(d)
+        }
     }
 
+    async function corpUpgrader(ns, force) {
+        updateData(); //refresh corp1 stats
+        ns.print(`CORP-UPGRADER: Checking for levelable upgrade...`);
+        for (let upgrade of corpUpgrades) {
 
-    //ns.print(divisions)
+            if (force && corp.getUpgradeLevelCost(upgrade) < corp1.funds * upgradeSpeed) {
+                await corp.levelUpgrade(upgrade);
+                ns.print(`SUCCESS: ${upgrade} level increased by 1.`)
+
+            } //else ns.print(`FAILED: Insufficient funds to Upgrade ${upgrade}`);
+
+            updateData(); //refresh corp1 stats
+        };
+    };
+
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /*
+    purchaseUpgrade()
+    purchase corp1 unlockable upgrades based on a predfined order list.
+    */
+
+    function purchaseUnlock(ns) {
+        ns.print(`Checking for funds to purchase unlocks...`);
+        updateData(); //refresh corp1 stats
+        let costPercent = 0.4
+        for (let corpUnlock of corpUnlockables) {
+            let cost = corp.getUnlockUpgradeCost(corpUnlock);
+            if (!corp.hasUnlockUpgrade(corpUnlock) && cost <= corp1.funds * costPercent) {
+                corp.unlockUpgrade(corpUnlock);
+                ns.print(`SUCCESS: Purchased ${corpUnlock} for ${formatMoney(cost)}`);
+                return;
+            } else if (cost > corp1.funds * costPercent) {
+                ns.print(`FAILED: Insufficient funds to buy ${corpUnlock}. ${formatMoney(cost)} > ${formatMoney(corp1.funds)} `);
+            } else ns.print(`INFO: ${corpUnlock} already owned`);
+        }
+    }
+
+    //////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    /*
+    getNoffer()
+    checks for funding offers and accepts if they are good enough
+    */
+    function getNoffer() {
+
+        let offer = corp.getInvestmentOffer();
+        var target_funds = 0;
+        switch (offer.round) {
+            case 1:
+                target_funds = 2e11; // 200B
+                break;
+            case 2:
+                target_funds = 5e12; // 5T
+                break;
+            case 3:
+                target_funds = 3e13; // 50T
+                break;
+            case 4:
+                target_funds = 3e14; // 500T
+                break;
+
+            default:
+                break;
+        }
+
+        if (offer.funds > target_funds) {
+            corp.acceptInvestmentOffer();
+            return true;
+        }
+    }
+
+    /* ================================------------------- MAIN ---------------------====================================
+        
+                                                            PHASE ONE
+        
+           Create a corp. determine if you can self fund, or if youre in BN3.
+       */
+
+    let rootname = "FUBAR"
+    let player = ns.getPlayer(); // refresh player data
+    const selfFund = player.money >= 1.5e11
+    let worked = false;
+    if (!player.hascorp) {
+        if (selfFund) {
+            worked = corp.createCorporation(rootname, selfFund);
+        } else if (!selfFund && player.bitNodeN == 3) {
+            worked = corp.createCorporation(rootname, selfFund);
+        } else {
+            ns.print("FAILED: Too poor to start a company and you're not in BN3 (required for seed money option)");
+        }
+        if (!worked) {
+            ns.print("FAILED: Cant create ", rootname);
+        }
+    } else ns.print(`SUCCESS: Player has a corp already.`)
+
+    let corp1 = corp.getCorporation();
+    updateData();
+
+
+
+
     while (true) {
 
-        for (let divName of divisions) {
+        for (let d of divisionDB) {
 
-            let args = `--div `;
-            args = args.concat(divName);
-            ns.print(`Running script for ${divName}`)
-            ns.exec("boardroom.js", "home", 1, "--div", divName);
+            if (!d.running && d.shouldRun) {
+                ns.print(`Firing off script for ${d.name}`)
+                let pid = ns.exec("/corp/boardroom.js", "home", 1, "--div", d.name);
+                ns.tail(pid);
+            }
+        }
+
+        getNoffer()
+        corpUpgrader(ns, false);
+        purchaseUnlock(ns)
+        let dividendPercent = (corp1.revenue - corp1.expenses)
+        if (!corp1.public) {
+            let publicThreshold = 5e20
+            let shouldGoPublic = corp1.funds > publicThreshold
+            if (shouldGoPublic) {
+                let shareOffer = 1e6;
+                corp.goPublic(shareOffer);
+                corp.issueDividends(dividendPercent);
+
+            }
 
         }
-        await ns.sleep(6000);
+
+        await ns.sleep(10000);
     }
 }

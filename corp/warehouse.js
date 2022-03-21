@@ -329,13 +329,13 @@ export async function main(ns) {
     updateBaseData(ns);
 
     if (!corp.hasWarehouse(divname, cityName)) {
-        ns.tprint(`${cityName}: No warehouse found. creating one`)
+        ns.print(`${cityName}: No warehouse found. creating one`)
         if (corp.getPurchaseWarehouseCost() < corp1.funds) {
             await corp.purchaseWarehouse(divname, cityName);
-            ns.tprint(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}:  warehouse created `);
+            ns.print(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}:  warehouse created `);
 
         } else {
-            ns.tprint(`FAILED: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: Insufficient funds to Purchase Warehouse`);
+            ns.print(`FAILED: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: Insufficient funds to Purchase Warehouse`);
             return;
         }
     } //else ns.print(`SUCCESS: ${cityName} warehouse exists`)
@@ -343,7 +343,7 @@ export async function main(ns) {
     updateEmpMeta(ns, divname, cityName);
 
 
-    ns.tprint(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}:  - Warehouse is ${wh_size} units @ ${wh_percent_used}% utilized `)
+    ns.print(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}:  - Warehouse is ${wh_size} units @ ${wh_percent_used}% utilized `)
 
 
 
@@ -354,11 +354,11 @@ export async function main(ns) {
         // UPGRADE the warehouse
         if (corp.getUpgradeWarehouseCost(divname, cityName) < corp1.funds * upgradeSpeed * 3) {
             await corp.upgradeWarehouse(divname, cityName);
-            ns.tprint(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: Warehouse upgraded. `)
+            ns.print(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: Warehouse upgraded. `)
 
             // reload wh stats before looping, ITERATOR
             updateEmpMeta(ns, divname, cityName);
-            ns.tprint(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: ${cityName} - Warehouse is  ${wh_percent_used}%utilized `)
+            ns.print(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: ${cityName} - Warehouse is  ${wh_percent_used}%utilized `)
             //ns.print(`${cityName} - Warehouse is ${wh_size}, ${wh_percent_used}%utilized `)
             // await ns.sleep(1006);
         } else break;
@@ -403,12 +403,12 @@ export async function main(ns) {
         // All helpers should be launched at home since they use tempory scripts, and we only reserve ram on home
         if (!ns.isRunning("materials.js", "home", "--div", division.name, "--city", cityName, "--mat", material[0], "--phase", phase, "--loop", maintLoopCounter)) {//...["--div", division.name, "--city", cityName, "--mat", material[0]]
 
-            ns.tprint(`materials.js not running for ${material[0]} in ${cityName}`)
+            ns.print(`materials.js not running for ${material[0]} in ${cityName}`)
             let pid = ns.exec("/corp/materials.js", "home", 1, "--div", division.name, "--city", cityName, "--mat", material[0], "--phase", phase, "--loop", maintLoopCounter);
             //ns.tail(pid)
-            ns.print(`Started Material Manager with PID ${pid}`);
+            //ns.print(`Started Material Manager with PID ${pid}`);
             await ns.sleep(100);
-        } else ns.tprint(`/corp/materials.js IS running for ${material[0]} in ${cityName}`)
+        } else ns.print(`/corp/materials.js IS running for ${material[0]} in ${cityName}`)
     }
 
 
@@ -426,19 +426,19 @@ export async function main(ns) {
     if (prodmats.length >= 1) {
         for (let mat of prodmats) {
             updateBaseData(ns);
-            ns.tprint(`SUCCESS:Checking ${mat} in ${cityName} `);
+            ns.print(`SUCCESS:${division.name} Checking ${mat} in ${cityName} `);
             if (hasTA2) {
                 //
                 await corp.sellMaterial(division.name, cityName, mat, "MAX", "MP");
-                ns.tprint(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}${mat} set to be sold`);
+                ns.print(`SUCCESS: ${division.name} PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}${mat} set to be sold`);
                 await corp.setMaterialMarketTA1(division.name, cityName, mat, true);
                 await corp.setMaterialMarketTA2(division.name, cityName, mat, true);
-                ns.tprint(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}Market-TA.II set for ${mat}`);
+                ns.print(`SUCCESS: ${division.name} PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}Market-TA.II set for ${mat}`);
 
             } else if (mat.length >= 1) {
 
                 await corp.sellMaterial(division.name, cityName, mat, "MAX", "MP");
-                ns.tprint(`SUCCESS:PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName} ${mat} set to be sold`);
+                ns.print(`SUCCESS:${division.name} PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName} ${mat} set to be sold`);
             }
         }
 
@@ -454,18 +454,18 @@ export async function main(ns) {
         if (makesProds) {
 
             for (let p of products) {
-                let prod = corp.getProduct(divisionName, p)
+                let prod = corp.getProduct(division.name, p)
                 if (prod.developmentProgress > 100) prodMeta.push(prod);
             }
             prodMeta.length !== 0 ? choppingBlock = prodMeta.sort(dynamicSort("dmd")) : choppingBlock;
 
             if (products.length <= maxProducts - 1) {
                 corp.makeProduct(division.name, cityName, productName, designInvest, marketingInvest);
-                ns.tprint(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName} Product ${productName} created. `);
+                ns.print(`SUCCESS: ${division.name} PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName} Product ${productName} created. `);
 
             } else if (prodMeta.length >= maxProducts) {
                 corp.discontinueProduct(division.name, choppingBlock[choppingBlock.length - 1].name)
-                ns.tprint(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName} Product ${choppingBlock[choppingBlock.length - 1].name} DISCONTINUED`);
+                ns.print(`SUCCESS: ${division.name} PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName} Product ${choppingBlock[choppingBlock.length - 1].name} DISCONTINUED`);
             }
 
             if (prodMeta.length >= 1 && prodMeta.length <= maxProducts - 1) {
@@ -475,13 +475,13 @@ export async function main(ns) {
                     if (hasTA2) {
                         // 
                         corp.sellProduct(division.name, cityName, product.name, "MAX", "MP", true)
-                        ns.tprint(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName} ${product.name} set to be sold`);
+                        ns.print(`SUCCESS: ${division.name} PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName} ${product.name} set to be sold`);
                         corp.setProductMarketTA1(division.name, product.name, true)
                         corp.setProductMarketTA2(division.name, product.name, true);
-                        ns.tprint(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName} Market-TA.II set for ${product.name}`);
+                        ns.print(`SUCCESS: ${division.name} PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName} Market-TA.II set for ${product.name}`);
                     } else {
                         corp.sellProduct(division.name, cityName, product.name, "MAX", "MP", true)
-                        ns.tprint(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName} ${product.name} set to be sold in ${cityName}`);
+                        ns.print(`SUCCESS: ${division.name} PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName} ${product.name} set to be sold in ${cityName}`);
                     }
 
                 }

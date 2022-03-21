@@ -36,9 +36,6 @@ export async function main(ns) {
     let div = args[`div`];
     let cityName = args[`city`]
     let material = args[`mat`]
-    //const rootname = "FUBAR";
-    //let player = ns.getPlayer();
-    //let phase = args[`phase`]
     let maintLoopCounter = args[`loop`]
     //const cities = ["Aevum", "Chongqing", "Sector-12", "New Tokyo", "Ishima", "Volhaven"];
 
@@ -169,10 +166,6 @@ export async function main(ns) {
         },
     ];
 
-    let industryDBkeys = Object.keys(industryDB);
-
-    let employeeDB = [];
-
     let materialSizes = {
         "Water": 0.05,
         "Energy": 0.01,
@@ -187,76 +180,27 @@ export async function main(ns) {
         "RealEstate": 0.005,
     }
 
-    /*
-        let jobStats = [
-            { name: "Engineer", "1": 0.2, "2": 0.2, "3": 0.2, primeStat: "exp" },
-            { name: "Research & Development", "1": 0.1, "2": 0.2, "3": 0.2, primeStat: "int" },
-            { name: "Operations", "1": 0.5, "2": 0.5, "3": 0.45, primeStat: "eff" },
-            { name: "Management", "1": 0.1, "2": 0.05, "3": 0.05, primeStat: "cha" },//management has cha priority in ordering
-            { name: "Business", "1": 0.1, "2": 0.05, "3": 0.05, primeStat: "cha" },
-            { name: "Training", "1": 0, "2": 0, "3": .05, primeStat: "" }
-        ]
-    */
-
-    let employeeMeta = {
-        "Total": 0,
-        "Research & Development": 0,
-        "Business": 0,
-        "Engineer": 0,
-        "Management": 0,
-        "Operations": 0,
-        "Training": 0
-    };
-
 
     const logBase = (n, base) => Math.log(n) / Math.log(base);
-
-    //let corpUpgrades = ["Smart Factories", "Smart Storage", "FocusWires", "Neural Accelerators", "Speech Processor Implants", "Nuoptimal Nootropic Injector Implants", "Wilson Analytics",
-    //"DreamSense", "ABC SalesBots"];
-
-    //let corpUnlockables = ["Smart Supply"]
-
     let materials = [];
-
-
-    let incomeThreshold = 0;
     let wh_size = 0;
     let wh_size_used = 0; //get the amt of the wh currently used
     let wh_percent_used = 0;
     let upgradeScale = 0; // 10000
-    let profit = 0;
-    let upgradeSpeed = 0;
     //let maintLoopCounter = 0;
-    let makesProds = false;
     let bonusTime = 10 // 10 for normal timing, but if you are in bonus time this is 100. no API method to indicate bonus time outside gang API
 
-    let prodmats = [];
 
     async function updateBaseData(ns) {
-        //ns.print(`TEST1`)
-        //ns.print(`Resetting corp/div objects....`);
         corp1 = corp.getCorporation();
-        //ns.print(`TEST2`)
         profit = (corp1.revenue - corp1.expenses);
-        //ns.print(`TEST3`)
-        //player = corp.getPlayer();
-        //ns.print(`TEST4`)
         division = corp.getDivision(div);
-        //ns.print(`TEST5`)
         upgradeScale = logBase(phase + 8, industryDB.find(d => d.name == division.type).incFac);
-        // ns.print(`upgradeScale: ${upgradeScale}`);
         incomeThreshold = Math.pow(1.5e6, upgradeScale);
-        //ns.print(upgradeScale)
-        //ns.print(incomeThreshold)
-        //ns.print(`incomeThreshold: ${incomeThreshold}`);
         upgradeSpeed = 1 / logBase(phase + 10, industryDB.find(d => d.name == division.type).upFac) / 10;
-        //ns.print(`upgradeSpeed: ${upgradeSpeed}`);
         materials = industryDB.find(d => d.name == division.type).materialRatio;
-
         makesProds = industryDB.find(d => d.name == division.name).makesProducts;
-
         prodmats = industryDB.find(d => d.name == division.name).prodMats;
-
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -269,124 +213,65 @@ export async function main(ns) {
     async function updateEmpMeta(ns, divname, cityName) {
 
         updateBaseData(ns);
-        let office = corp.getOffice(divname, cityName);
-        //ns.print(`Rebuilding Employee Database....`);
-        employeeDB = [];
-        office.employees.forEach(name => {
-            let tempEmployee = corp.getEmployee(divname, cityName, name);
-            employeeDB.push(tempEmployee);
-        });
-
         wh_size = corp.getWarehouse(divname, cityName).size; //get the current wh size
         wh_size_used = corp.getWarehouse(divname, cityName).sizeUsed; //get the amt of the wh currently used
         wh_percent_used = Math.round((wh_size_used / wh_size) * 100);
 
-        // compile some useful meta
-
-        employeeMeta = {
-            "Total": 0,
-            "Research & Development": 0,
-            "Business": 0,
-            "Engineer": 0,
-            "Management": 0,
-            "Operations": 0,
-            "Training": 0
-        };
-        let sumHap = 0;
-        let sumEne = 0;
-        let avgHap = 0;
-        let avgEne = 0;
-
-        for (let employee of employeeDB) {
-            employeeMeta.Total += 1;
-            employeeMeta[employee.pos] += 1; //position counter
-            sumHap += employee.hap;
-            sumEne += employee.ene;
-        }
-        avgHap = sumHap / employeeDB.length;
-        avgEne = sumEne / employeeDB.length;
-
-        employeeMeta.avgHap = avgHap;
-        employeeMeta.avgEne = avgEne;
     }
-
-
-
-
-
-
 
     updateBaseData(ns)
 
     let divname = div;
     materials = industryDB.find(d => d.name == division.type).materialRatio;
-    ns.print(`${material} -- ${materials} -- ${materials.find(n => n[0] == material)[1]} `)
-
+    //	ns.print(`${material} -- ${materials} -- ${materials.find(n => n[0] == material)[1]} `)
     let purchase_timing_interval = 10000;
     let amt_proportion = 1 / (purchase_timing_interval / (purchase_timing_interval / bonusTime))
     let factor = 1;
     //for (let material of materials) {
     updateEmpMeta(ns, divname, cityName);
-
     // how many units of this material in the warehouse
     let currentstock = (corp.getMaterial(divname, cityName, material).qty);
-
     // what is our target stock volume. (half the warehouse space * the percent of availble space for that material divided by the material size)
     let desiredStock = (((wh_size / 2) * materials.find(n => n[0] == material)[1]) / materialSizes[material]) * Math.pow(factor, factor);
     // how much we need to change stock by
     let amt = Math.abs(desiredStock - currentstock);
-
     let loopcount = 0;
-    ns.tprint(`Materials Script running...`)
+    //ns.tprint(`Materials Script running...`)
     while (currentstock > desiredStock * 1.1 || currentstock < desiredStock * 0.9) {
         loopcount += 1;
         //loopcount % 3 == 0 ? bonusTime = 10 : bonusTime;
-        ns.print(`bonusTime: ${bonusTime}`)
+        //ns.print(`bonusTime: ${bonusTime}`)
         if (loopcount % 5) {
             await corp.sellMaterial(divname, cityName, material, "", "");
             await corp.buyMaterial(divname, cityName, material, 0);
-
-
         }
 
         //amt = desiredStock - currentstock;
-        ns.tprint(`loopcount: ${loopcount}`)
-        ns.tprint(`amt:${amt}  = desiredStock:${desiredStock} - currentstock:${currentstock}`)
-        ns.tprint(`wh_percent_used: ${wh_percent_used}`)
-
+        //ns.print(`loopcount: ${loopcount}`)
+        //ns.print(`amt:${amt}  = desiredStock:${desiredStock} - currentstock:${currentstock}`)
+        //ns.print(`wh_percent_used: ${wh_percent_used}`)
         let switchStatus = "";
-
         if (desiredStock == currentstock) {
-
             switchStatus = "nothing"
-            ns.print(`switchStatus: ${switchStatus}`)
-
+            //ns.print(`switchStatus: ${switchStatus}`)
         } else if (desiredStock < currentstock) {
             switchStatus = "sell"
-            ns.print(`switchStatus: ${switchStatus}`)
-
-
+            //ns.print(`switchStatus: ${switchStatus}`)
         } else if (desiredStock > currentstock) {
             switchStatus = "buy"
-            ns.print(`switchStatus: ${switchStatus}`)
-
+            //ns.print(`switchStatus: ${switchStatus}`)
         }
-
-
-
-
 
         amt_proportion = 1 / (purchase_timing_interval / (purchase_timing_interval / bonusTime))
         let perSecAmt = amt * amt_proportion;
-        ns.print(`amt_proportion: ${amt_proportion}`)
-        ns.print(`perSecAmt: ${perSecAmt}`)
-
-        ns.print(`switchStatus: ${switchStatus}`)
+        //		ns.print(`amt_proportion: ${amt_proportion}`)
+        //		ns.print(`perSecAmt: ${perSecAmt}`)
+        //ns.print(`switchStatus: ${switchStatus}`)
 
         switch (switchStatus) {
 
             case "buy":
-                ns.tprint(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: BUYING ${material} @ ${(amt * amt_proportion).toFixed(2)} - %${((currentstock / desiredStock) * 100).toFixed(1)}`);
+                ns.print(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: BUYING ${material} @ ${(amt * amt_proportion).toFixed(2)} - %${((currentstock / desiredStock) * 100).toFixed(1)}`);
                 await corp.buyMaterial(divname, cityName, material, (perSecAmt));
                 await ns.sleep(purchase_timing_interval);
                 await corp.buyMaterial(divname, cityName, material, 0) //reset to 0 after buy cycle
@@ -394,7 +279,7 @@ export async function main(ns) {
                 break
 
             case "sell":
-                ns.tprint(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: SELLING ${material} @ ${-amt.toFixed(2)} - %${((currentstock / desiredStock) * 100).toFixed(1)}`)
+                ns.print(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: SELLING ${material} @ ${-amt.toFixed(2)} - %${((currentstock / desiredStock) * 100).toFixed(1)}`)
                 await corp.sellMaterial(divname, cityName, material, perSecAmt, "0");
                 await ns.sleep(purchase_timing_interval);
                 await corp.sellMaterial(divname, cityName, material, "", "")
@@ -402,7 +287,7 @@ export async function main(ns) {
                 break;
 
             case "nothing":
-                ns.tprint(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: ${material} stock optimized. no changes needed `)
+                ns.print(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: ${material} stock optimized. no changes needed `)
                 //await ns.sleep(purchase_timing_interval / 10)
                 break;
         }
