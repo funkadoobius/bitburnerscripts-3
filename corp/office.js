@@ -42,7 +42,7 @@ export async function main(ns) {
     const corp = eval("ns.corporation"); ///shhhh
     let corp1 = corp.getCorporation(); // corp1 stats
     let division = corp.getDivision(div)
-
+    let upgradeSpeed = 0.9;
     /////////////////////////////////////////////////////////////////////////////////////////////
     function dynamicSort(property) {
         /*
@@ -85,15 +85,15 @@ export async function main(ns) {
     };
 
     const logBase = (n, base) => Math.log(n) / Math.log(base);
-    let upgradeScale = 0; // 10000
+    let upgradeScale = logBase(8, phase); // 10000
 
     async function updateBaseData(ns) {
         corp1 = corp.getCorporation();
         profit = (corp1.revenue - corp1.expenses);
         division = corp.getDivision(div);
-        upgradeScale = logBase(phase + 8, industryDB.find(d => d.name == division.type).incFac);
+        upgradeScale = logBase(8, phase);
         incomeThreshold = Math.pow(1.5e6, upgradeScale);
-        upgradeSpeed = 0.7//1 / logBase(phase + 10, industryDB.find(d => d.name == division.type).upFac) / 10;
+        upgradeSpeed = 0.9//1 / logBase(phase + 10, industryDB.find(d => d.name == division.type).upFac) / 10;
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -147,23 +147,20 @@ export async function main(ns) {
     let divname = div
     updateEmpMeta(ns, divname, cityName);
 
-    ns.print(`${division.name} PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: Checking for office upgrades...`);
+    //ns.tprint(`${division.name} PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: Checking for office upgrades...`);
 
     let thisOffice = corp.getOffice(divname, cityName);
     let upgradeSize = 10;
-    /*
-        if (corp.getOfficeSizeUpgradeCost(divname, cityName, 10) < corp1.funds * upgradeSpeed) {
-            await corp.upgradeOfficeSize(divname, cityName, upgradeSize);
-        }*/
-    //ns.tttprint(`upgradeSpeed: ${upgradeSpeed}`);
+    maintLoopCounter % 10 == 0 ? upgradeSize = 1 : upgradeSize;
+    upgradeSize = 0 ? upgradeSize += 1 : upgradeSize;
     let cost = corp.getOfficeSizeUpgradeCost(divname, cityName, upgradeSize)
 
-    ns.print(`MATH: ${formatMoney(cost)} < ${formatMoney(corp1.funds * .7)}`)
-    if (cost < (corp1.funds * 0.4) && employeeMeta.avgEne > 99.99 && employeeMeta.avgHap > 99.99) {
-        ns.print(`PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: Office upgrades available. Happiness and Energy recovered`);
+    //ns.tprint(`MATH: ${formatMoney(cost)} < ${formatMoney(corp1.funds)}`)
+    if (cost < corp1.funds * 0.5 && employeeMeta.avgEne > 99.9 && employeeMeta.avgHap > 99.9) {
+        ns.tprint(`PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: Office upgrades available. Happiness and Energy recovered`);
         if (await corp.upgradeOfficeSize(divname, cityName, upgradeSize)) {
-            ns.print(`SUCCESS: ${division.name} PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: : added ${upgradeSize} cubicles to office `);
-        } else ns.print(`FAILED: ${division.name} PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: : could not add ${upgradeSize} cubicles to office `);
+            ns.tprint(`SUCCESS: ${division.name} PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: : added ${upgradeSize} cubicles to office `);
+        } else ns.tprint(`FAILED: ${division.name} PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: : could not add ${upgradeSize} cubicles to office `);
 
         await ns.sleep(1007);
 
@@ -171,17 +168,17 @@ export async function main(ns) {
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     updateEmpMeta(ns, divname, cityName);
-    //ns.ttprint(`${cityName}: Hiring employees to fill the office...`);
+    //ns.tprint(`${cityName}: Hiring employees to fill the office...`);
     thisOffice = corp.getOffice(divname, cityName);
     let i = thisOffice.employees.length;
     let newhires = thisOffice.size - i;
-    ns.print(`INFO: ${division.name} PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}:  Current employees: ${i}, of ${thisOffice.size}. ${newhires}  newhires needed`);
+    //ns.tprint(`INFO: ${division.name} PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}:  Current employees: ${i}, of ${thisOffice.size}. ${newhires}  newhires needed`);
 
 
     while (i < thisOffice.size) {
         await corp.hireEmployee(divname, cityName);
         i++;
-        ns.print(`SUCCESS: ${division.name} PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}:  hired employee ${i} of ${thisOffice.size}`);
+        ns.tprint(`SUCCESS: ${division.name} PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}:  hired employee ${i} of ${thisOffice.size}`);
         await ns.sleep(100);
     }
 
@@ -191,7 +188,7 @@ export async function main(ns) {
         for (let employee of employeeDB) {
             await corp.assignJob(div, cityName, employee.name, "Unassigned")
             // load all of the employee objects into an a await whUpgrader(ns, divname, cityName);mployee.name, "Unassigned")
-            ns.print(`INFO: ${division.name} PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName} Unassigned ${employee.name} to be reassigned a new job.`)
+            ns.tprint(`INFO: ${division.name} PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName} Unassigned ${employee.name} to be reassigned a new job.`)
             await ns.sleep(1010);
         }
     }
@@ -212,8 +209,8 @@ export async function main(ns) {
             if ((employee.pos == "Training" || employee.pos == "Unassigned") && employeeMeta[job.name] < jobTarget) {
 
                 await corp.assignJob(div, cityName, employee.name, job.name)
-                ns.print(`SUCCESS: ${division.name} PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: ${employeeMeta[job.name] + 1} of ${jobTarget}`);
-                ns.print(`INFO: ${division.name} PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: Assigning Name: ${employee.name} - ${job.primeStat} = ${employee[job.primeStat]} to ${job.name}`);
+                ns.tprint(`SUCCESS: ${division.name} PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: ${employeeMeta[job.name] + 1} of ${jobTarget}`);
+                ns.tprint(`INFO: ${division.name} PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: Assigning Name: ${employee.name} - ${job.primeStat} = ${employee[job.primeStat]} to ${job.name}`);
                 employeeDB[employee.pos] = job.name;
 
                 employeeMeta[job.name] += 1;
@@ -225,5 +222,5 @@ export async function main(ns) {
 
         updateEmpMeta(ns, div, cityName);
     }
-
+    await ns.sleep(100000)
 }

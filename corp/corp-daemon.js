@@ -10,40 +10,72 @@ import {
 export async function main(ns) {
 
     //let corp1 = corp.getCorporation();
-
+    disableLogs(ns, [`exec`, `sleep`])
     const corp = eval("ns.corporation"); ///shhhh
+    const logBase = (n, base) => Math.log(n) / Math.log(base);
+
+    let upgradeSpeed = 1;
+    let profit = 0;
+    let phase = 1;
+    let maintLoopCounter = 0;
+    let incomeThreshold = 0;
+    let upgradeScale = 1;
 
     let divisionDB = [
-        { name: "Agriculture", startPoint: 1.5e10 },
-        { name: "Mining", startPoint: 1.5e11 },
-        { name: "Tobacco", startPoint: 5e11 },
-        { name: "Energy", startPoint: 1e12 },
-        { name: "Food", startPoint: 4e12 },
-        { name: "Utilities", startPoint: 1.5e13 },
-        { name: "Computer", startPoint: 5e13 },
-        { name: "Fishing", startPoint: 1.5e14 },
-        { name: "Software", startPoint: 5e14 },
-        { name: "Chemical", startPoint: 1e15 },
-        { name: "Pharmaceutical", startPoint: 5e15 },
-        { name: "Robotics", startPoint: 1.5e17 },
-        { name: "Healthcare", startPoint: 1.5e18 },
-        { name: "RealEstate", startPoint: 1.5e19 }
+        { name: "Agriculture", startPoint: 1.5e10 },//15B
+        { name: "Food", startPoint: 1e10 }, //10B
+        { name: "Tobacco", startPoint: 2e10 }, //20B
+        { name: "Software", startPoint: 2.5e10 }, //25B
+        { name: "Chemical", startPoint: 7e10 }, //70B
+        { name: "Fishing", startPoint: 8e10 }, //80B
+        { name: "Utilities", startPoint: 1.5e11 }, // 150B
+        { name: "Pharmaceutical", startPoint: 2e11 }, //200B
+        { name: "Energy", startPoint: 2.25e11 }, //225B
+        { name: "Mining", startPoint: 3e11 },//300B
+        { name: "Computer", startPoint: 5e11 },//500B
+        { name: "RealEstate", startPoint: 6e11 },//600B
+        { name: "Healthcare", startPoint: 7.5e11 },//750B
+        { name: "Robotics", startPoint: 1e12 },//1T
     ]
 
     let corpUpgrades = ["Smart Factories", "Smart Storage", "FocusWires", "Neural Accelerators", "Speech Processor Implants", "Nuoptimal Nootropic Injector Implants", "Wilson Analytics",
         "DreamSense", "ABC SalesBots", "Project Insight"];
 
     let corpUnlockables = ["Smart Supply", "Export", "VeChain", "Market Research - Demand", "Market Data - Competition", "Shady Accounting", "Government Partnership"]
-
+    let nextrun = "";
 
     function updateData() {
         for (let d of divisionDB) {
             corp1 = corp.getCorporation();
             d.running = ns.isRunning("/corp/boardroom.js", "home", "--div", d.name);
-            d.shouldRun = d.startPoint < corp1.funds;
-
+            d.shouldRun = corp1.funds * upgradeSpeed > d.startPoint;
+            profit = (corp1.revenue - corp1.expenses);
             //ns.print(d)
         }
+    }
+
+    async function processCorpUpgrade(upgrade) {
+
+
+        if (corp.getUpgradeLevel(upgrade) < 2 && corp.getUpgradeLevelCost(upgrade) < corp1.funds) {
+            ns.print(`SUCCESS: ${upgrade} level increased by 1.`)
+            corp.levelUpgrade(upgrade);
+        } //else ns.print(`FAILED: ${upgrade} CASE first ifelse.`)
+
+        if ((corp.getUpgradeLevelCost(upgrade) > corp1.funds * upgradeSpeed)) {
+            ns.print(`FAILED: Insufficient funds to Upgrade ${upgrade}`);
+            return;
+        }
+
+        if (corp.getUpgradeLevelCost(upgrade) < corp1.funds * upgradeSpeed) {
+            ns.print(`SUCCESS: ${upgrade} level increased by 1.`)
+            corp.levelUpgrade(upgrade);
+        } //else ns.print(`FAILED: ${upgrade} CASE CALLED 2.`)
+
+        //else ns.print(`SUCCESS: ${upgrade} CASE CALLED.`)
+        //ns.print(`SUCCESS: ${upgrade} CASE CALLED 3.`)
+        //ns.print(`SUCCESS: ${upgrade} CASE returned.`)
+
     }
 
     async function corpUpgrader(ns, force) {
@@ -51,11 +83,40 @@ export async function main(ns) {
         ns.print(`CORP-UPGRADER: Checking for levelable upgrade...`);
         for (let upgrade of corpUpgrades) {
 
-            if (force && corp.getUpgradeLevelCost(upgrade) < corp1.funds * upgradeSpeed) {
-                await corp.levelUpgrade(upgrade);
-                ns.print(`SUCCESS: ${upgrade} level increased by 1.`)
+            switch (upgrade) {
+                case `Focus Wires`:
+                    ns.print(`CORP-UPGRADER: ${upgrade}...`);
+                    processCorpUpgrade(upgrade);
+                    break;
 
-            } //else ns.print(`FAILED: Insufficient funds to Upgrade ${upgrade}`);
+                case `Neural Accelerators`:
+                    ns.print(`CORP-UPGRADER: ${upgrade}...`);
+                    processCorpUpgrade(upgrade);
+                    break;
+
+                case "Speech Processor Implants":
+                    ns.print(`CORP-UPGRADER: ${upgrade}...`);
+                    processCorpUpgrade(upgrade);
+                    break;
+
+                case "Nuoptimal Nootropic Injector Implants":
+                    ns.print(`CORP-UPGRADER: ${upgrade}...`);
+                    processCorpUpgrade(upgrade);
+                    break;
+
+                case "Smart Factories":
+                    ns.print(`CORP-UPGRADER: ${upgrade}...`);
+                    processCorpUpgrade(upgrade);
+
+                    break;
+
+                default:
+                    if (force && corp.getUpgradeLevelCost(upgrade) < corp1.funds * upgradeSpeed) {
+                        corp.levelUpgrade(upgrade);
+                        ns.print(`SUCCESS: DEFAULT ${upgrade} level increased by 1.`)
+                    } else ns.print(`FAILED: Insufficient funds to Upgrade ${upgrade}`);
+
+            }
 
             updateData(); //refresh corp1 stats
         };
@@ -71,16 +132,43 @@ export async function main(ns) {
     function purchaseUnlock(ns) {
         ns.print(`Checking for funds to purchase unlocks...`);
         updateData(); //refresh corp1 stats
-        let costPercent = 0.4
+        let costPercent = 0.1
         for (let corpUnlock of corpUnlockables) {
             let cost = corp.getUnlockUpgradeCost(corpUnlock);
-            if (!corp.hasUnlockUpgrade(corpUnlock) && cost <= corp1.funds * costPercent) {
-                corp.unlockUpgrade(corpUnlock);
-                ns.print(`SUCCESS: Purchased ${corpUnlock} for ${formatMoney(cost)}`);
+
+            if (corp.hasUnlockUpgrade(corpUnlock)) {
+                ns.print(`INFO: ${corpUnlock} already owned`);
                 return;
-            } else if (cost > corp1.funds * costPercent) {
-                ns.print(`FAILED: Insufficient funds to buy ${corpUnlock}. ${formatMoney(cost)} > ${formatMoney(corp1.funds)} `);
-            } else ns.print(`INFO: ${corpUnlock} already owned`);
+            }
+
+            switch (corpUnlock) {
+
+                case "Smart Supply":
+                    if (cost <= corp1.funds * costPercent) {
+                        corp.unlockUpgrade(corpUnlock);
+                        ns.print(`SUCCESS: Purchased ${corpUnlock} for ${formatMoney(cost)}`);
+                        return;
+                    } else if (cost > corp1.funds * costPercent) {
+                        ns.print(`FAILED: Insufficient funds to buy ${corpUnlock}. ${formatMoney(cost)} > ${formatMoney(corp1.funds * costPercent)} `);
+                    }
+                    break;
+
+                default:
+                    if (phase > 20) {
+                        if (cost <= corp1.funds * costPercent) {
+                            corp.unlockUpgrade(corpUnlock);
+                            ns.print(`SUCCESS: Purchased ${corpUnlock} for ${formatMoney(cost)}`);
+                            return;
+                        } else if (cost > corp1.funds * costPercent) {
+                            ns.print(`FAILED: Insufficient funds to buy ${corpUnlock}. ${formatMoney(cost)} > ${formatMoney(corp1.funds * costPercent)} `);
+                        }
+
+                    }
+                    break;
+
+            }
+
+
         }
     }
 
@@ -117,6 +205,23 @@ export async function main(ns) {
         }
     }
 
+    async function startBoardroom(name) {
+        nextrun = divisionDB.find(d => d.shouldRun && !d.running)
+
+        name = "" ? name = nextrun.name : name;
+        ns.print(name)
+        if (nextrun.name == undefined || nextrun.name == "") {
+            ns.print(`Boardroom undefined`)
+
+            return;
+        } else {
+            ns.print(`Firing off script for ${nextrun.name}`)
+            let pid = ns.exec("/corp/boardroom.js", "home", 1, "--div", name);
+            ns.tail(pid);
+            nextrun = divisionDB.find(d => d.shouldRun && !d.running)
+            ns.print(`next up should be ${nextrun.name}`)
+        }
+    }
     /* ================================------------------- MAIN ---------------------====================================
         
                                                             PHASE ONE
@@ -128,7 +233,7 @@ export async function main(ns) {
     let player = ns.getPlayer(); // refresh player data
     const selfFund = player.money >= 1.5e11
     let worked = false;
-    if (!player.hascorp) {
+    if (!player.hasCorporation) {
         if (selfFund) {
             worked = corp.createCorporation(rootname, selfFund);
         } else if (!selfFund && player.bitNodeN == 3) {
@@ -142,38 +247,60 @@ export async function main(ns) {
     } else ns.print(`SUCCESS: Player has a corp already.`)
 
     let corp1 = corp.getCorporation();
+
     updateData();
 
+    startBoardroom("Agriculture");
 
+    if (!corp.hasUnlockUpgrade(corpUnlockables[0]) && corp.getUnlockUpgradeCost(corpUnlockables[0]) <= corp1.funds) {
+        corp.unlockUpgrade(corpUnlockables[0])
+        ns.print(`SUCCESS: Purchased SmartSupply`)
+    }
 
+    corpUpgrader(ns, false);
 
     while (true) {
 
-        for (let d of divisionDB) {
+        maintLoopCounter += 1;
+        ns.print(`BEGIN MAINTENANCE LOOP ---------- LOOP ${maintLoopCounter}----------`)
 
-            if (!d.running && d.shouldRun) {
-                ns.print(`Firing off script for ${d.name}`)
-                let pid = ns.exec("/corp/boardroom.js", "home", 1, "--div", d.name);
-                ns.tail(pid);
+        updateData();
+        //maintLoopCounter = 0;
+        upgradeScale = logBase(maintLoopCounter + 9, 9);
+        incomeThreshold = Math.pow(5e5, upgradeScale);
+
+        ns.print(`INFO: profit  of ${formatMoney(incomeThreshold)}, currently ${formatMoney(profit)} `);
+        ns.print(`${upgradeScale} - ${formatMoney(incomeThreshold)}`)
+
+        while (profit <= incomeThreshold) {
+            ns.print(`INFO: Waiting on profit threshold of ${formatMoney(incomeThreshold)}, currently ${formatMoney(profit)} `);
+
+            //for (let d of divisionDB) {
+
+
+            // }
+
+            getNoffer()
+            // corpUpgrader(ns, false);
+            purchaseUnlock(ns)
+            startBoardroom("");
+            let dividendPercent = (profit / corp1.revenue) * 100
+            if (!corp1.public) {
+                let publicThreshold = 5e20
+                let shouldGoPublic = corp1.funds > publicThreshold
+                if (shouldGoPublic) {
+                    let shareOffer = 1e6;
+                    corp.goPublic(shareOffer);
+                    corp.issueDividends(dividendPercent);
+
+                }
+
             }
+            await ns.sleep(1000)
         }
 
-        getNoffer()
-        corpUpgrader(ns, false);
-        purchaseUnlock(ns)
-        let dividendPercent = (corp1.revenue - corp1.expenses)
-        if (!corp1.public) {
-            let publicThreshold = 5e20
-            let shouldGoPublic = corp1.funds > publicThreshold
-            if (shouldGoPublic) {
-                let shareOffer = 1e6;
-                corp.goPublic(shareOffer);
-                corp.issueDividends(dividendPercent);
-
-            }
-
-        }
-
-        await ns.sleep(10000);
+        updateData();
+        await ns.sleep(600)
+        // await ns.sleep(10000);
     }
 }

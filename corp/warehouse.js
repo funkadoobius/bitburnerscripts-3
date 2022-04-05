@@ -29,16 +29,14 @@ export function autocomplete(data, args) {
 }
 export async function main(ns) {
 
+    disableLogs(ns, [`exec`, `sleep`])
 
     let args = ns.flags(argsSchema);
     let phase = args[`phase`]; // args[0];
     let div = args[`div`];
+    let divname = div;
     let cityName = args[`city`]
     let maintLoopCounter = args[`loop`]
-    //const rootname = "FUBAR";
-    //let player = ns.getPlayer();
-
-    //const cities = ["Aevum", "Chongqing", "Sector-12", "New Tokyo", "Ishima", "Volhaven"];
 
     const corp = eval("ns.corporation"); ///shhhh
     let corp1 = corp.getCorporation(); // corp1 stats
@@ -185,16 +183,6 @@ export async function main(ns) {
         "RealEstate": 0.005,
     }
 
-    /*
-        let jobStats = [
-            { name: "Engineer", "1": 0.2, "2": 0.2, "3": 0.2, primeStat: "exp" },
-            { name: "Research & Development", "1": 0.1, "2": 0.2, "3": 0.2, primeStat: "int" },
-            { name: "Operations", "1": 0.5, "2": 0.5, "3": 0.45, primeStat: "eff" },
-            { name: "Management", "1": 0.1, "2": 0.05, "3": 0.05, primeStat: "cha" },//management has cha priority in ordering
-            { name: "Business", "1": 0.1, "2": 0.05, "3": 0.05, primeStat: "cha" },
-            { name: "Training", "1": 0, "2": 0, "3": .05, primeStat: "" }
-        ]
-    */
 
     let employeeMeta = {
         "Total": 0,
@@ -206,55 +194,47 @@ export async function main(ns) {
         "Training": 0
     };
 
+    let warehouseMaterialDB = [
+        { name: "Hardware", size: 0.06 },
+        { name: "Robots", size: 0.5 },
+        { name: "AI Cores", size: 0.1 },
+        { name: "RealEstate", size: 0.005 }
+    ]
 
     const logBase = (n, base) => Math.log(n) / Math.log(base);
 
-    //let corpUpgrades = ["Smart Factories", "Smart Storage", "FocusWires", "Neural Accelerators", "Speech Processor Implants", "Nuoptimal Nootropic Injector Implants", "Wilson Analytics",
-    //"DreamSense", "ABC SalesBots"];
-
-    //let corpUnlockables = ["Smart Supply"]
-
     let materials = [];
-
-
-    let incomeThreshold = 0;
-    let wh_size = 0;
-    let wh_size_used = 0; //get the amt of the wh currently used
-    let wh_percent_used = 0;
+    let warehouse = corp.getWarehouse(div, cityName);
+    let wh_percent_used = Math.round((warehouse.sizeUsed / warehouse.size) * 100);;
     let upgradeScale = 0; // 10000
-    let profit = 0;
     let upgradeSpeed = 0;
-    //let maintLoopCounter = 0;
     let makesProds = false;
     let bonusTime = 10 // 10 for normal timing, but if you are in bonus time this is 100. no API method to indicate bonus time outside gang API
-
+    let profit = 0
+    let incomeThreshold = Math.pow(5e5, upgradeScale);
+    let percentUsable = 0.3
     let prodmats = [];
 
-    async function updateBaseData(ns) {
-        //ns.print(`TEST1`)
-        //ns.print(`Resetting corp/div objects....`);
+    function updateBaseData(ns) {
         corp1 = corp.getCorporation();
-        //ns.print(`TEST2`)
         profit = (corp1.revenue - corp1.expenses);
-        //ns.print(`TEST3`)
-        //player = corp.getPlayer();
-        //ns.print(`TEST4`)
         division = corp.getDivision(div);
-        //ns.print(`TEST5`)
+        warehouse = corp.getWarehouse(div, cityName);
         upgradeScale = logBase(phase + 8, industryDB.find(d => d.name == division.type).incFac);
-        // ns.print(`upgradeScale: ${upgradeScale}`);
-        incomeThreshold = Math.pow(1.5e6, upgradeScale);
-        //ns.print(upgradeScale)
-        //ns.print(incomeThreshold)
-        //ns.print(`incomeThreshold: ${incomeThreshold}`);
+        incomeThreshold = Math.pow(5e5, upgradeScale);
         upgradeSpeed = 1 / logBase(phase + 10, industryDB.find(d => d.name == division.type).upFac) / 10;
-        //ns.print(`upgradeSpeed: ${upgradeSpeed}`);
         materials = industryDB.find(d => d.name == division.type).materialRatio;
-
         makesProds = industryDB.find(d => d.name == division.name).makesProducts;
-
         prodmats = industryDB.find(d => d.name == division.name).prodMats;
+        warehouseMaterialDB.forEach(m => m.currentstock = corp.getMaterial(div, cityName, m.name).qty)
+        warehouseMaterialDB.forEach(m => m.whSize = m.currentstock * m.size)
+        warehouseMaterialDB.forEach(m => m.currentPercent = (m.whSize / warehouse.size) * 100)
+        warehouseMaterialDB.forEach(m => m.desirePercent = materials.find(n => n[0] == m.name)[1] / 2)
+        warehouseMaterialDB.forEach(m => m.desiredStock = (warehouse.size * m.desirePercent) / m.size)
+        warehouseMaterialDB.forEach(m => m.errored = m.currentstock > m.desiredStock);
 
+        wh_percent_used = Math.round((warehouse.sizeUsed / warehouse.size) * 100);
+        ns.print(`${wh_percent_used}`)
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -267,57 +247,10 @@ export async function main(ns) {
     async function updateEmpMeta(ns, divname, cityName) {
 
         updateBaseData(ns);
-        let office = corp.getOffice(divname, cityName);
-        //ns.print(`Rebuilding Employee Database....`);
-        employeeDB = [];
-        office.employees.forEach(name => {
-            let tempEmployee = corp.getEmployee(divname, cityName, name);
-            employeeDB.push(tempEmployee);
-        });
 
-        wh_size = corp.getWarehouse(divname, cityName).size; //get the current wh size
-        wh_size_used = corp.getWarehouse(divname, cityName).sizeUsed; //get the amt of the wh currently used
-        wh_percent_used = Math.round((wh_size_used / wh_size) * 100);
 
-        // compile some useful meta
 
-        employeeMeta = {
-            "Total": 0,
-            "Research & Development": 0,
-            "Business": 0,
-            "Engineer": 0,
-            "Management": 0,
-            "Operations": 0,
-            "Training": 0
-        };
-        let sumHap = 0;
-        let sumEne = 0;
-        let avgHap = 0;
-        let avgEne = 0;
-
-        for (let employee of employeeDB) {
-            employeeMeta.Total += 1;
-            employeeMeta[employee.pos] += 1; //position counter
-            sumHap += employee.hap;
-            sumEne += employee.ene;
-        }
-        avgHap = sumHap / employeeDB.length;
-        avgEne = sumEne / employeeDB.length;
-
-        employeeMeta.avgHap = avgHap;
-        employeeMeta.avgEne = avgEne;
     }
-
-    //let execute = eval("ns.exec")
-
-
-    updateBaseData(ns)
-
-
-    let divname = div
-
-
-
 
 
     /*
@@ -329,42 +262,73 @@ export async function main(ns) {
     updateBaseData(ns);
 
     if (!corp.hasWarehouse(divname, cityName)) {
-        ns.print(`${cityName}: No warehouse found. creating one`)
+        ns.tprint(`${cityName}: No warehouse found. creating one`)
         if (corp.getPurchaseWarehouseCost() < corp1.funds) {
             await corp.purchaseWarehouse(divname, cityName);
-            ns.print(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}:  warehouse created `);
+            ns.tprint(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}:  warehouse created `);
 
         } else {
-            ns.print(`FAILED: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: Insufficient funds to Purchase Warehouse`);
+            ns.tprint(`FAILED: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: Insufficient funds to Purchase Warehouse`);
             return;
         }
     } //else ns.print(`SUCCESS: ${cityName} warehouse exists`)
 
-    updateEmpMeta(ns, divname, cityName);
+    updateBaseData(ns);
 
+    while (warehouse.size < 300) {
 
-    ns.print(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}:  - Warehouse is ${wh_size} units @ ${wh_percent_used}% utilized `)
-
-
-
-    while (wh_percent_used > 95) { // if the wh is too small based on utilization of 
-        //ns.print(`${cityName}: Warehouse updgrade needed.`)
-        //ns.print(corp.getUpgradeWarehouseCost(divname, cityName)) 
-
-        // UPGRADE the warehouse
-        if (corp.getUpgradeWarehouseCost(divname, cityName) < corp1.funds * upgradeSpeed * 3) {
+        if (corp.getUpgradeWarehouseCost(divname, cityName) < corp1.funds * percentUsable) {
+            //		ns.tprint(`ERROR CHECKER ---- Warehouse upgrade attempt`)
             await corp.upgradeWarehouse(divname, cityName);
-            ns.print(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: Warehouse upgraded. `)
 
-            // reload wh stats before looping, ITERATOR
-            updateEmpMeta(ns, divname, cityName);
-            ns.print(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: ${cityName} - Warehouse is  ${wh_percent_used}%utilized `)
-            //ns.print(`${cityName} - Warehouse is ${wh_size}, ${wh_percent_used}%utilized `)
-            // await ns.sleep(1006);
+            updateBaseData(ns);
+            //		ns.tprint(`ERROR CHECKER ---- Warehouse upgraded to ${warehouse.size}`)
         } else break;
+        //	ns.tprint(`SUCCESS CHECKER ---- Warehouse upgraded to ${warehouse.size}`)
 
-        await ns.sleep(1015);
+        await ns.sleep(199);
     }
+
+
+    //ns.tprint(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}:  - Warehouse is ${warehouse.size} units @ ${wh_percent_used}% utilized `)
+
+    if (wh_percent_used > 99) {
+        ns.tprint(`WAREHOUSE IS FULL, PURGING MATERIAL OVERSTOCK`)
+        for (let material of warehouseMaterialDB) {
+            ns.tprint(`======= ${material.name} ========`)
+            ns.tprint(`======= ${material.errored} ========`)
+            if (material.errored) {
+                ns.tprint(`OVERSTOCK OF ${material.name} DETECTED`)
+                let sellAmt = (material.currentstock - material.desiredStock) / 10
+
+
+                await corp.buyMaterial(divname, cityName, material.name, 0);
+                ns.tprint(`SELLING ${sellAmt} of ${material.name} for 10 seconds`)
+                await corp.sellMaterial(divname, cityName, material.name, sellAmt, "MP*0.001")
+                await ns.sleep(10000);
+            }
+        }
+        //await whUpgrader(ns, divname, cityName);
+    }
+
+    //while (wh_percent_used > 95) { // if the wh is too small based on utilization of 
+    //ns.print(`${cityName}: Warehouse updgrade needed.`)
+    //ns.print(corp.getUpgradeWarehouseCost(divname, cityName)) 
+
+    // UPGRADE the warehouse
+    if (corp.getUpgradeWarehouseCost(divname, cityName) < corp1.funds * percentUsable) {
+        await corp.upgradeWarehouse(divname, cityName);
+        ns.tprint(`SUCCESS: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: Warehouse upgraded. `)
+
+        // reload wh stats before looping, ITERATOR
+        updateBaseData(ns);
+        ns.tprint(`INFO: PHASE/LOOP:${phase}/${maintLoopCounter} ${cityName}: ${cityName} - Warehouse is  ${wh_percent_used}%utilized `)
+        //ns.print(`${cityName} - Warehouse is ${wh_size}, ${wh_percent_used}%utilized `)
+        // await ns.sleep(1006);
+    } //else ns.tprint("NEED MORE MONEIES")
+
+    //await ns.sleep(1015);
+    //}
 
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -385,15 +349,9 @@ export async function main(ns) {
     let purchase_timing_interval = 10000;
     let amt_proportion = 1 / (purchase_timing_interval / (purchase_timing_interval / bonusTime))
     let factor = 1;
-    wh_size > 6000 ? factor = upgradeSpeed : factor = 1;
+    warehouse.size > 6000 ? factor = upgradeSpeed : factor = 1;
 
-    if (wh_percent_used > 99) {
-        for (let material of materials) {
-            await corp.sellMaterial(divname, cityName, material[0], "", "");
-            await corp.buyMaterial(divname, cityName, material[0], 0);
-        }
-        //await whUpgrader(ns, divname, cityName);
-    }
+
 
 
 
@@ -487,7 +445,7 @@ export async function main(ns) {
                 }
             }
         }
-
+        await ns.sleep(100000)
     }
 
     ///////////////////////////////////////////////////////////////////////////////////////////

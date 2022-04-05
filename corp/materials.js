@@ -179,6 +179,14 @@ export async function main(ns) {
         "AI Cores": 0.1,
         "RealEstate": 0.005,
     }
+    let warehouseMaterialDB = [
+        { name: "Hardware", size: 0.06 },
+        { name: "Robots", size: 0.5 },
+        { name: "AI Cores", size: 0.1 },
+        { name: "RealEstate", size: 0.005 }
+    ]
+
+
 
 
     const logBase = (n, base) => Math.log(n) / Math.log(base);
@@ -189,18 +197,23 @@ export async function main(ns) {
     let upgradeScale = 0; // 10000
     //let maintLoopCounter = 0;
     let bonusTime = 10 // 10 for normal timing, but if you are in bonus time this is 100. no API method to indicate bonus time outside gang API
-
+    let warehouse = corp.getWarehouse(div, cityName)
 
     async function updateBaseData(ns) {
         corp1 = corp.getCorporation();
         profit = (corp1.revenue - corp1.expenses);
         division = corp.getDivision(div);
+        warehouse = corp.getWarehouse(divname, cityName)
         upgradeScale = logBase(phase + 8, industryDB.find(d => d.name == division.type).incFac);
         incomeThreshold = Math.pow(1.5e6, upgradeScale);
         upgradeSpeed = 1 / logBase(phase + 10, industryDB.find(d => d.name == division.type).upFac) / 10;
         materials = industryDB.find(d => d.name == division.type).materialRatio;
         makesProds = industryDB.find(d => d.name == division.name).makesProducts;
         prodmats = industryDB.find(d => d.name == division.name).prodMats;
+        warehouseMaterialDB.forEach(m => m.currentstock = corp.getMaterial(div, cityName, m.name).qty)
+        warehouseMaterialDB.forEach(m => m.whSize = m.currentstock * m.size)
+        warehouseMaterialDB.forEach(m => m.whPercent = (m.whSize / warehouse.size) * 100)
+        warehouseMaterialDB.forEach(m => m.desiredStock = (((warehouse.size / 2) * materials.find(n => n[0] == m.name)[1]) / m.size))
     }
 
     /////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -239,7 +252,8 @@ export async function main(ns) {
     //ns.tprint(`Materials Script running...`)
     while (currentstock > desiredStock * 1.1 || currentstock < desiredStock * 0.9) {
         loopcount += 1;
-        //loopcount % 3 == 0 ? bonusTime = 10 : bonusTime;
+        loopcount % 3 == 0 && bonusTime == 10 ? bonusTime = 100 : bonusTime;
+        loopcount % 6 == 0 && bonusTime == 100 ? bonusTime = 10 : bonusTime;
         //ns.print(`bonusTime: ${bonusTime}`)
         if (loopcount % 5) {
             await corp.sellMaterial(divname, cityName, material, "", "");
@@ -307,14 +321,3 @@ export async function main(ns) {
     //}
 
 }
-
-
-
-
-
-
-
-
-
-
-
